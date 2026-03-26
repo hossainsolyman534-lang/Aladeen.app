@@ -27,17 +27,51 @@ export interface AppData {
   addedAt: string;
 }
 
-export const CATEGORIES = [
-  "Shopping",
-  "Grocery",
-  "Fashion",
-  "Electronics",
-  "Pharmacy",
-  "Food Delivery",
-  "Lifestyle"
+export interface CategoryData {
+  name: string;
+  description: string;
+  icon: string;
+}
+
+export const CATEGORIES: CategoryData[] = [
+  {
+    name: "Marketplace",
+    description: "The biggest online marketplaces in Bangladesh. Buy and sell anything from electronics to fashion.",
+    icon: "ShoppingBag"
+  },
+  {
+    name: "Grocery",
+    description: "Fresh groceries and daily essentials delivered to your doorstep. Save time and shop from home.",
+    icon: "Utensils"
+  },
+  {
+    name: "Fashion",
+    description: "Stay trendy with the latest fashion collections from top Bangladeshi brands and designers.",
+    icon: "Shirt"
+  },
+  {
+    name: "Electronics",
+    description: "Discover the best deals on mobile phones, laptops, and home appliances from trusted sellers.",
+    icon: "Smartphone"
+  },
+  {
+    name: "Pharmacy",
+    description: "Order medicines and healthcare products safely from verified online pharmacies.",
+    icon: "ShieldCheck"
+  },
+  {
+    name: "Food Delivery",
+    description: "Hungry? Order your favorite meals from local restaurants and get them delivered fast.",
+    icon: "Zap"
+  },
+  {
+    name: "Lifestyle",
+    description: "Everything you need for your home, hobbies, and personal care in one place.",
+    icon: "Sparkles"
+  }
 ];
 
-const MOCK_REVIEWS: AppReview[] = [
+export const MOCK_REVIEWS: AppReview[] = [
   {
     id: "r1",
     userName: "Rahim Ahmed",
