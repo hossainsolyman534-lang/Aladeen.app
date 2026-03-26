@@ -27,7 +27,8 @@ import {
   Home,
   Trash2,
   ExternalLink,
-  User
+  User,
+  Heart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MOCK_APPS, AppData, CATEGORIES, MOCK_REVIEWS, CategoryData } from './constants';
@@ -79,18 +80,6 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
           <CheckCircle2 className="w-3.5 h-3.5 text-aladeen-green fill-aladeen-green/10" />
         </div>
       )}
-      {downloadProgress !== undefined && (
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center p-3">
-          <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden mb-1.5">
-            <motion.div 
-              className="h-full bg-aladeen-green"
-              initial={{ width: 0 }}
-              animate={{ width: `${downloadProgress}%` }}
-            />
-          </div>
-          <span className="text-[10px] font-black text-white">{Math.floor(downloadProgress)}%</span>
-        </div>
-      )}
     </div>
     <div className={variant === 'compact' ? 'text-center' : ''}>
       <h3 className={`font-bold text-slate-900 truncate mb-0.5 ${variant === 'compact' ? 'text-xs' : 'text-sm'}`}>
@@ -99,13 +88,35 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
       <p className="text-[10px] font-medium text-slate-400 truncate mb-2 uppercase tracking-wider">
         <HighlightedText text={app.developer} highlight={highlight} />
       </p>
-      <div className={`flex items-center gap-1.5 ${variant === 'compact' ? 'justify-center' : ''}`}>
-        <div className="flex items-center gap-0.5 bg-slate-50 px-1.5 py-0.5 rounded-md">
-          <span className="text-[10px] font-black text-slate-700">{app.rating}</span>
-          <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
+      
+      {downloadProgress !== undefined ? (
+        <motion.div 
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-1"
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[8px] font-black text-aladeen-green uppercase tracking-widest animate-pulse">Installing</span>
+            <span className="text-[9px] font-black text-aladeen-green">{Math.floor(downloadProgress)}%</span>
+          </div>
+          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-50 shadow-inner">
+            <motion.div 
+              className="h-full bg-aladeen-green rounded-full shadow-[0_0_10px_rgba(0,255,135,0.3)]"
+              initial={{ width: 0 }}
+              animate={{ width: `${downloadProgress}%` }}
+              transition={{ type: 'spring', bounce: 0, duration: 0.2 }}
+            />
+          </div>
+        </motion.div>
+      ) : (
+        <div className={`flex items-center gap-1.5 ${variant === 'compact' ? 'justify-center' : ''}`}>
+          <div className="flex items-center gap-0.5 bg-slate-50 px-1.5 py-0.5 rounded-md">
+            <span className="text-[10px] font-black text-slate-700">{app.rating}</span>
+            <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
+          </div>
+          <span className="text-[10px] font-bold text-slate-300 ml-auto">{app.size}</span>
         </div>
-        <span className="text-[10px] font-bold text-slate-300 ml-auto">{app.size}</span>
-      </div>
+      )}
     </div>
   </motion.div>
 );
@@ -158,7 +169,10 @@ const AppDetail = ({
   onUninstall,
   userReview,
   onRate,
-  downloadProgress
+  onAppClick,
+  downloadProgress,
+  isWishlisted,
+  onToggleWishlist
 }: { 
   app: AppData; 
   onBack: () => void; 
@@ -167,7 +181,10 @@ const AppDetail = ({
   onUninstall: () => void; 
   userReview: { rating: number; comment: string } | null;
   onRate: (rating: number, comment: string) => void;
+  onAppClick: (app: AppData) => void;
   downloadProgress?: number;
+  isWishlisted: boolean;
+  onToggleWishlist: () => void;
 }) => {
   const isDownloading = downloadProgress !== undefined;
   const progress = downloadProgress || 0;
@@ -245,6 +262,7 @@ const AppDetail = ({
 
   return (
     <motion.div 
+      id="app-detail-container"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
@@ -254,14 +272,23 @@ const AppDetail = ({
         <button onClick={onBack} className="p-2 -ml-2 hover:bg-slate-50 rounded-full transition-colors">
           <ArrowLeft className="w-6 h-6 text-slate-700" />
         </button>
-        <div className="flex items-center gap-4">
-          <button onClick={handleShare} className="p-2 hover:bg-slate-50 rounded-full transition-colors">
-            <Share2 className="w-5 h-5 text-slate-700" />
-          </button>
-          <button className="p-2 hover:bg-slate-50 rounded-full transition-colors">
-            <MoreVertical className="w-5 h-5 text-slate-700" />
-          </button>
-        </div>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleWishlist();
+              }}
+              className={`p-2 hover:bg-slate-50 rounded-full transition-colors ${isWishlisted ? 'text-rose-500' : 'text-slate-700'}`}
+            >
+              <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
+            </button>
+            <button onClick={handleShare} className="p-2 hover:bg-slate-50 rounded-full transition-colors">
+              <Share2 className="w-5 h-5 text-slate-700" />
+            </button>
+            <button className="p-2 hover:bg-slate-50 rounded-full transition-colors">
+              <MoreVertical className="w-5 h-5 text-slate-700" />
+            </button>
+          </div>
       </div>
 
       <div className="px-6 py-8 max-w-2xl mx-auto">
@@ -278,6 +305,16 @@ const AppDetail = ({
                 <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
               </div>
               <span className="text-xs text-slate-400">{app.reviews} reviews</span>
+              
+              {userReview && (
+                <div className="flex items-center gap-1 bg-aladeen-green/10 px-2 py-1 rounded-lg">
+                  <span className="text-[10px] font-bold text-aladeen-green uppercase tracking-wider">Your Rating</span>
+                  <div className="flex items-center gap-0.5 ml-1">
+                    <span className="text-xs font-bold text-aladeen-green">{userReview.rating}</span>
+                    <Star className="w-2.5 h-2.5 fill-aladeen-green text-aladeen-green" />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -329,6 +366,26 @@ const AppDetail = ({
                   Install
                 </>
               )}
+            </button>
+
+            <button 
+              onClick={onToggleWishlist}
+              className={`w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 border ${
+                isWishlisted 
+                  ? 'bg-rose-50 text-rose-500 border-rose-100 hover:bg-rose-100' 
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
+              {isWishlisted ? 'In Wishlist' : 'Add to Wishlist'}
+            </button>
+
+            <button 
+              onClick={handleShare}
+              className="w-full py-3 bg-white text-slate-600 border border-slate-200 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+            >
+              <Share2 className="w-4 h-4" />
+              Share App
             </button>
 
             {isInstalled && !isDownloading && (
@@ -415,62 +472,74 @@ const AppDetail = ({
           <h2 className="text-lg font-bold text-slate-900 mb-1">Rate this app</h2>
           <p className="text-slate-500 text-xs mb-6">Tell others what you think</p>
           
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onMouseEnter={() => setHoverRating(star)}
-                    onMouseLeave={() => setHoverRating(0)}
-                    onClick={() => setTempRating(star)}
-                    className="p-1 transition-transform active:scale-90"
-                  >
-                    <Star 
-                      className={`w-8 h-8 transition-colors ${
-                        star <= (hoverRating || tempRating) 
-                          ? 'fill-yellow-400 text-yellow-400' 
-                          : 'text-slate-300'
-                      }`} 
-                    />
-                  </button>
-                ))}
-              </div>
-              {tempRating > 0 && (
-                <div className="text-aladeen-green font-bold text-sm bg-aladeen-green/10 px-3 py-1.5 rounded-full">
-                  {tempRating}/5 Stars
+          {isInstalled ? (
+            <div className="flex flex-col gap-6">
+              <div className="flex items-center justify-between">
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      onClick={() => setTempRating(star)}
+                      className="p-1 transition-transform active:scale-90"
+                    >
+                      <Star 
+                        className={`w-8 h-8 transition-colors ${
+                          star <= (hoverRating || tempRating) 
+                            ? 'fill-yellow-400 text-yellow-400' 
+                            : 'text-slate-300'
+                        }`} 
+                      />
+                    </button>
+                  ))}
                 </div>
+                {tempRating > 0 && (
+                  <div className="text-aladeen-green font-bold text-sm bg-aladeen-green/10 px-3 py-1.5 rounded-full">
+                    {tempRating}/5 Stars
+                  </div>
+                )}
+              </div>
+
+              {tempRating > 0 && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="flex flex-col gap-4"
+                >
+                  <textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Describe your experience (optional)..."
+                    className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-sm text-slate-700 outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all min-h-[100px] resize-none"
+                  />
+                  <button
+                    onClick={handleSubmitReview}
+                    disabled={isSubmitting}
+                    className="w-full py-3 bg-aladeen-green text-white rounded-xl font-bold text-sm shadow-lg shadow-aladeen-green/10 hover:bg-aladeen-dark transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isSubmitting ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      'Submit Review'
+                    )}
+                  </button>
+                </motion.div>
               )}
             </div>
-
-            {tempRating > 0 && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="flex flex-col gap-4"
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-slate-500 text-sm mb-4">You need to install this app to leave a review.</p>
+              <button 
+                onClick={onInstall}
+                className="text-aladeen-green font-bold text-sm hover:underline"
               >
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Describe your experience (optional)..."
-                  className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-sm text-slate-700 outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all min-h-[100px] resize-none"
-                />
-                <button
-                  onClick={handleSubmitReview}
-                  disabled={isSubmitting}
-                  className="w-full py-3 bg-aladeen-green text-white rounded-xl font-bold text-sm shadow-lg shadow-aladeen-green/10 hover:bg-aladeen-dark transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isSubmitting ? (
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    'Submit Review'
-                  )}
-                </button>
-              </motion.div>
-            )}
-          </div>
+                Install now
+              </button>
+            </div>
+          )}
           
-          {userReview && !isSubmitting && (
+          {userReview && !isSubmitting && isInstalled && (
             <motion.p 
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
@@ -524,6 +593,31 @@ const AppDetail = ({
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Related Apps Section */}
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-bold text-slate-900">Related Apps</h2>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+            {MOCK_APPS
+              .filter(a => a.id !== app.id && (a.category === app.category || a.developer === app.developer))
+              .slice(0, 4)
+              .map(relatedApp => (
+                <AppCard 
+                  key={relatedApp.id} 
+                  app={relatedApp} 
+                  onClick={() => {
+                    onAppClick(relatedApp);
+                    // Scroll to top when switching apps
+                    const container = document.getElementById('app-detail-container');
+                    if (container) container.scrollTo({ top: 0, behavior: 'smooth' });
+                  }} 
+                />
+              ))
+            }
           </div>
         </div>
       </div>
@@ -621,20 +715,37 @@ const CategoryDetail = ({
       exit={{ opacity: 0, x: 20 }}
       className="fixed inset-0 bg-white z-50 overflow-y-auto"
     >
-      <div className="sticky top-0 bg-white/90 backdrop-blur-md z-10 flex items-center px-6 py-4 border-b border-slate-50">
-        <button onClick={onBack} className="p-2 -ml-2 hover:bg-slate-50 rounded-full transition-colors">
-          <ArrowLeft className="w-6 h-6 text-slate-700" />
+      <div className="relative h-64 md:h-80 w-full overflow-hidden">
+        <img 
+          src={category.banner} 
+          alt={category.name} 
+          className="w-full h-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <button 
+          onClick={onBack} 
+          className="absolute top-6 left-6 p-3 bg-white/20 backdrop-blur-md hover:bg-white/30 rounded-full text-white transition-all shadow-lg z-20"
+        >
+          <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="ml-4 text-xl font-black text-slate-900">{category.name}</h1>
+        <div className="absolute bottom-8 left-8 z-20">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-xl">
+              <CategoryIcon icon={category.icon} />
+            </div>
+            <div>
+              <h1 className="text-3xl font-black text-white drop-shadow-lg">{category.name}</h1>
+              <p className="text-white/80 text-sm font-medium mt-1 drop-shadow-md">Explore the best {category.name.toLowerCase()} apps</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-10">
-        <div className="flex flex-col items-center text-center mb-12">
-          <div className="w-20 h-20 rounded-[2rem] bg-aladeen-green/10 text-aladeen-green flex items-center justify-center mb-6">
-            <CategoryIcon icon={category.icon} />
-          </div>
-          <h2 className="text-3xl font-black text-slate-900 mb-4">{category.name}</h2>
-          <p className="text-slate-500 max-w-lg leading-relaxed">
+      <div className="max-w-4xl mx-auto px-6 py-12">
+        <div className="mb-16">
+          <h2 className="text-xl font-bold text-slate-900 mb-4">About {category.name}</h2>
+          <p className="text-slate-500 max-w-2xl leading-relaxed text-lg">
             {category.description}
           </p>
         </div>
@@ -658,11 +769,13 @@ const CategoryDetail = ({
 
 const UserProfile = ({ 
   installedApps, 
+  wishlistApps,
   onAppClick, 
   onBack,
   downloadingApps = {}
 }: { 
   installedApps: AppData[]; 
+  wishlistApps: AppData[];
   onAppClick: (app: AppData) => void;
   onBack: () => void;
   downloadingApps?: Record<string, number>;
@@ -726,6 +839,31 @@ const UserProfile = ({
           </div>
         )}
       </div>
+
+      <div className="mt-12">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold text-slate-900">My Wishlist</h3>
+          <span className="text-sm font-bold text-slate-400">{wishlistApps.length} Apps</span>
+        </div>
+
+        {wishlistApps.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+            {wishlistApps.map(app => (
+              <AppCard key={app.id} app={app} onClick={() => onAppClick(app)} downloadProgress={downloadingApps[app.id]} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
+            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+              <Heart className="w-8 h-8 text-slate-200" />
+            </div>
+            <h4 className="text-lg font-bold text-slate-900">Your wishlist is empty</h4>
+            <p className="text-slate-500 text-sm max-w-xs mx-auto mt-2">
+              Save apps you're interested in to keep track of them here.
+            </p>
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 };
@@ -740,9 +878,13 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [sortBy, setSortBy] = useState<'popular' | 'latest' | 'rating'>('popular');
+  const [sortBy, setSortBy] = useState<'popular' | 'latest' | 'rating' | 'downloads'>('popular');
   const [installedApps, setInstalledApps] = useState<string[]>(() => {
     const saved = localStorage.getItem('aladeen_installed');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [wishlist, setWishlist] = useState<string[]>(() => {
+    const saved = localStorage.getItem('aladeen_wishlist');
     return saved ? JSON.parse(saved) : [];
   });
   const [downloadingApps, setDownloadingApps] = useState<Record<string, number>>({});
@@ -755,6 +897,20 @@ export default function App() {
     const newInstalled = [...installedApps, appId];
     setInstalledApps(newInstalled);
     localStorage.setItem('aladeen_installed', JSON.stringify(newInstalled));
+  };
+
+  const toggleWishlist = (appId: string) => {
+    const newWishlist = wishlist.includes(appId)
+      ? wishlist.filter(id => id !== appId)
+      : [...wishlist, appId];
+    setWishlist(newWishlist);
+    localStorage.setItem('aladeen_wishlist', JSON.stringify(newWishlist));
+    
+    if (newWishlist.includes(appId)) {
+      toast.success('Added to wishlist');
+    } else {
+      toast.info('Removed from wishlist');
+    }
   };
 
   const startDownload = (appId: string) => {
@@ -796,6 +952,13 @@ export default function App() {
     localStorage.setItem('aladeen_reviews', JSON.stringify(newReviews));
   };
 
+  const parseDownloads = (downloads: string): number => {
+    const clean = downloads.replace('+', '').toLowerCase();
+    if (clean.endsWith('m')) return parseFloat(clean) * 1000000;
+    if (clean.endsWith('k')) return parseFloat(clean) * 1000;
+    return parseFloat(clean) || 0;
+  };
+
   const filteredApps = useMemo(() => {
     let apps = [...MOCK_APPS];
     if (searchQuery) {
@@ -819,6 +982,8 @@ export default function App() {
       });
     } else if (sortBy === 'rating') {
       apps.sort((a, b) => b.rating - a.rating);
+    } else if (sortBy === 'downloads') {
+      apps.sort((a, b) => parseDownloads(b.downloads) - parseDownloads(a.downloads));
     } else {
       apps.sort((a, b) => b.addedAt.localeCompare(a.addedAt));
     }
@@ -879,6 +1044,7 @@ export default function App() {
         {view === 'profile' ? (
           <UserProfile 
             installedApps={MOCK_APPS.filter(app => installedApps.includes(app.id))}
+            wishlistApps={MOCK_APPS.filter(app => wishlist.includes(app.id))}
             onAppClick={setSelectedApp}
             onBack={() => setView('home')}
             downloadingApps={downloadingApps}
@@ -1124,6 +1290,7 @@ export default function App() {
                     <option value="popular">Popular</option>
                     <option value="latest">Latest</option>
                     <option value="rating">Rating</option>
+                    <option value="downloads">Downloads</option>
                   </select>
                 </div>
               </div>
@@ -1166,12 +1333,15 @@ export default function App() {
           <AppDetail 
             app={selectedApp} 
             onBack={() => setSelectedApp(null)} 
+            onAppClick={setSelectedApp}
             isInstalled={installedApps.includes(selectedApp.id)}
             onInstall={() => startDownload(selectedApp.id)}
             onUninstall={() => handleUninstall(selectedApp.id)}
             userReview={userReviews[selectedApp.id] || null}
             onRate={(rating, comment) => handleRate(selectedApp.id, rating, comment)}
             downloadProgress={downloadingApps[selectedApp.id]}
+            isWishlisted={wishlist.includes(selectedApp.id)}
+            onToggleWishlist={() => toggleWishlist(selectedApp.id)}
           />
         )}
       </AnimatePresence>

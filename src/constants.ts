@@ -31,43 +31,51 @@ export interface CategoryData {
   name: string;
   description: string;
   icon: string;
+  banner: string;
 }
 
 export const CATEGORIES: CategoryData[] = [
   {
     name: "Marketplace",
     description: "The biggest online marketplaces in Bangladesh. Buy and sell anything from electronics to fashion.",
-    icon: "ShoppingBag"
+    icon: "ShoppingBag",
+    banner: "https://picsum.photos/seed/marketplace_banner/1200/400"
   },
   {
     name: "Grocery",
     description: "Fresh groceries and daily essentials delivered to your doorstep. Save time and shop from home.",
-    icon: "Utensils"
+    icon: "Utensils",
+    banner: "https://picsum.photos/seed/grocery_banner/1200/400"
   },
   {
     name: "Fashion",
     description: "Stay trendy with the latest fashion collections from top Bangladeshi brands and designers.",
-    icon: "Shirt"
+    icon: "Shirt",
+    banner: "https://picsum.photos/seed/fashion_banner/1200/400"
   },
   {
     name: "Electronics",
     description: "Discover the best deals on mobile phones, laptops, and home appliances from trusted sellers.",
-    icon: "Smartphone"
+    icon: "Smartphone",
+    banner: "https://picsum.photos/seed/electronics_banner/1200/400"
   },
   {
     name: "Pharmacy",
     description: "Order medicines and healthcare products safely from verified online pharmacies.",
-    icon: "ShieldCheck"
+    icon: "ShieldCheck",
+    banner: "https://picsum.photos/seed/pharmacy_banner/1200/400"
   },
   {
     name: "Food Delivery",
     description: "Hungry? Order your favorite meals from local restaurants and get them delivered fast.",
-    icon: "Zap"
+    icon: "Zap",
+    banner: "https://picsum.photos/seed/food_banner/1200/400"
   },
   {
     name: "Lifestyle",
     description: "Everything you need for your home, hobbies, and personal care in one place.",
-    icon: "Sparkles"
+    icon: "Sparkles",
+    banner: "https://picsum.photos/seed/lifestyle_banner/1200/400"
   }
 ];
 
