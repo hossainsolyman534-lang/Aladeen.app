@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Toaster, toast } from 'sonner';
 import { 
   Search, 
@@ -51,7 +51,12 @@ import {
   Facebook,
   Calendar,
   Play,
-  Video
+  Video,
+  Eye,
+  EyeOff,
+  Twitter,
+  Instagram,
+  Linkedin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MOCK_APPS, AppData, CATEGORIES, MOCK_REVIEWS, CategoryData, ClientData, MOCK_CLIENTS } from './constants';
@@ -61,11 +66,13 @@ import { MOCK_APPS, AppData, CATEGORIES, MOCK_REVIEWS, CategoryData, ClientData,
 const AuthModal = ({ 
   isOpen, 
   onClose, 
-  onLogin 
+  onLogin,
+  isAdminMode = false
 }: { 
   isOpen: boolean; 
   onClose: () => void; 
-  onLogin: (user: any) => void 
+  onLogin: (user: any) => void;
+  isAdminMode?: boolean;
 }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
@@ -78,21 +85,24 @@ const AuthModal = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Admin Login Check
-    if (isLogin && formData.email === 'hossainsolyman534@gmail.com' && formData.password === '87654321') {
-      const adminUser = {
-        name: 'Admin',
-        email: 'hossainsolyman534@gmail.com',
-        role: 'admin'
-      };
-      onLogin(adminUser);
-      toast.success('Welcome back, Admin!');
-      onClose();
-      return;
+    if (isAdminMode || (isLogin && formData.email === 'hossainsolyman534@gmail.com' && formData.password === '87654321')) {
+      if (formData.email === 'hossainsolyman534@gmail.com' && formData.password === '87654321') {
+        const adminUser = {
+          name: 'Admin',
+          email: 'hossainsolyman534@gmail.com',
+          role: 'admin'
+        };
+        onLogin(adminUser);
+        toast.success('Welcome back, Admin!');
+        onClose();
+        return;
+      } else if (isAdminMode) {
+        toast.error('Invalid admin credentials');
+        return;
+      }
     }
 
     if (isLogin) {
-      // Regular User Login (Simulated)
       if (!formData.phone || !formData.password) {
         toast.error('Please fill in all fields');
         return;
@@ -105,7 +115,6 @@ const AuthModal = ({
       onLogin(user);
       toast.success('Logged in successfully!');
     } else {
-      // Regular User Signup (Simulated)
       if (!formData.name || !formData.phone || !formData.password) {
         toast.error('Please fill in all fields');
         return;
@@ -121,105 +130,145 @@ const AuthModal = ({
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl"
-      >
-        <div className="p-8">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-              {isLogin ? 'Welcome Back' : 'Create Account'}
-            </h2>
-            <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full transition-colors">
-              <X className="w-6 h-6 text-slate-400" />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div>
-                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Full Name</label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                  <input 
-                    type="text" 
-                    value={formData.name}
-                    onChange={e => setFormData({...formData, name: e.target.value})}
-                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
-                    placeholder="Enter your name"
-                  />
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+          />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="bg-white w-full max-w-md rounded-[2rem] overflow-hidden shadow-premium relative z-10"
+          >
+            <div className="p-8 sm:p-10">
+              <div className="flex justify-between items-center mb-10">
+                <div>
+                  <h2 className="text-3xl font-display font-bold text-slate-900 leading-tight">
+                    {isAdminMode ? 'Admin Portal' : isLogin ? 'Welcome Back' : 'Join Aladeen'}
+                  </h2>
+                  <p className="text-slate-500 mt-1 text-sm">
+                    {isAdminMode ? 'Secure access for administrators' : isLogin ? 'Sign in to your account' : 'Create your account to get started'}
+                  </p>
                 </div>
+                <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors self-start">
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
               </div>
-            )}
 
-            {isLogin && (
-              <div>
-                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Email (for Admin)</label>
-                <div className="relative">
-                  <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                  <input 
-                    type="email" 
-                    value={formData.email}
-                    onChange={e => setFormData({...formData, email: e.target.value})}
-                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
-                    placeholder="admin@example.com"
-                  />
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {isAdminMode ? (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Admin Email</label>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                        <input 
+                          type="email" 
+                          required
+                          value={formData.email}
+                          onChange={e => setFormData({...formData, email: e.target.value})}
+                          className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-aladeen-green/10 focus:border-aladeen-green transition-all font-medium"
+                          placeholder="admin@aladeen.app"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                        <input 
+                          type="password" 
+                          required
+                          value={formData.password}
+                          onChange={e => setFormData({...formData, password: e.target.value})}
+                          className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-aladeen-green/10 focus:border-aladeen-green transition-all font-medium"
+                          placeholder="••••••••"
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {!isLogin && (
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                        <div className="relative">
+                          <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                          <input 
+                            type="text" 
+                            required
+                            value={formData.name}
+                            onChange={e => setFormData({...formData, name: e.target.value})}
+                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-aladeen-green/10 focus:border-aladeen-green transition-all font-medium"
+                            placeholder="Your Name"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
+                      <div className="relative">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                        <input 
+                          type="tel" 
+                          required
+                          value={formData.phone}
+                          onChange={e => setFormData({...formData, phone: e.target.value})}
+                          className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-aladeen-green/10 focus:border-aladeen-green transition-all font-medium"
+                          placeholder="01XXXXXXXXX"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                        <input 
+                          type="password" 
+                          required
+                          value={formData.password}
+                          onChange={e => setFormData({...formData, password: e.target.value})}
+                          className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-aladeen-green/10 focus:border-aladeen-green transition-all font-medium"
+                          placeholder="••••••••"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <button 
+                  type="submit"
+                  className="w-full bg-aladeen-green text-white py-4 rounded-2xl font-bold shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all mt-4 active:scale-[0.98]"
+                >
+                  {isAdminMode ? 'Access Dashboard' : isLogin ? 'Sign In' : 'Create Account'}
+                </button>
+              </form>
+
+              {!isAdminMode && (
+                <div className="mt-10 text-center">
+                  <p className="text-sm text-slate-500">
+                    {isLogin ? "Don't have an account?" : "Already have an account?"}
+                    <button 
+                      onClick={() => setIsLogin(!isLogin)}
+                      className="ml-2 text-aladeen-green font-bold hover:text-aladeen-dark transition-colors"
+                    >
+                      {isLogin ? 'Sign Up' : 'Login'}
+                    </button>
+                  </p>
                 </div>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Mobile Number</label>
-              <div className="relative">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                <input 
-                  type="tel" 
-                  value={formData.phone}
-                  onChange={e => setFormData({...formData, phone: e.target.value})}
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
-                  placeholder="01XXXXXXXXX"
-                />
-              </div>
+              )}
             </div>
-
-            <div>
-              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                <input 
-                  type="password" 
-                  value={formData.password}
-                  onChange={e => setFormData({...formData, password: e.target.value})}
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-
-            <button 
-              type="submit"
-              className="w-full py-4 bg-aladeen-green text-white rounded-2xl font-bold text-lg shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all active:scale-[0.98] mt-4"
-            >
-              {isLogin ? 'Login' : 'Sign Up'}
-            </button>
-          </form>
-
-          <div className="mt-8 text-center">
-            <button 
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm font-bold text-slate-500 hover:text-aladeen-green transition-colors"
-            >
-              {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login"}
-            </button>
-          </div>
+          </motion.div>
         </div>
-      </motion.div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 };
 
@@ -254,12 +303,12 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
 
   return (
     <motion.div 
-      whileHover={{ y: -6 }}
+      whileHover={{ y: -8, shadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className={`bg-white rounded-[2rem] border border-slate-100 overflow-hidden cursor-pointer group transition-all duration-300 ${variant === 'compact' ? 'p-3' : 'p-5'}`}
+      className={`bg-white rounded-[2.5rem] border border-slate-100/60 overflow-hidden cursor-pointer group transition-all duration-500 hover:border-aladeen-green/20 ${variant === 'compact' ? 'p-4' : 'p-6'}`}
     >
-      <div className={`aspect-square rounded-2xl overflow-hidden mb-4 shadow-sm relative transition-transform duration-300 group-hover:scale-105 ${variant === 'compact' ? 'w-16 h-16 mx-auto' : 'w-full'}`}>
+      <div className={`aspect-square rounded-2xl overflow-hidden mb-4 shadow-sm relative transition-transform duration-500 group-hover:scale-105 ${variant === 'compact' ? 'w-16 h-16 mx-auto' : 'w-full'}`}>
         <img 
           src={app.icon} 
           alt={app.name} 
@@ -280,49 +329,44 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
           </div>
         )}
       </div>
-    <div className={variant === 'compact' ? 'text-center' : ''}>
-      <h3 className={`font-bold text-slate-900 truncate mb-0.5 ${variant === 'compact' ? 'text-xs' : 'text-sm'}`}>
-        <HighlightedText text={app.name} highlight={highlight} />
-      </h3>
-      <p className="text-[10px] font-medium text-slate-400 truncate mb-1 uppercase tracking-wider">
-        <HighlightedText text={app.developer} highlight={highlight} />
-      </p>
-      {variant !== 'compact' && (
-        <p className="text-[10px] text-slate-500 line-clamp-2 mb-2 leading-tight min-h-[2.5em]">
-          {app.shortDescription}
+      <div className={variant === 'compact' ? 'text-center' : ''}>
+        <h3 className={`font-bold text-slate-900 truncate mb-0.5 ${variant === 'compact' ? 'text-xs' : 'text-sm'}`}>
+          <HighlightedText text={app.name} highlight={highlight} />
+        </h3>
+        <p className="text-[10px] font-medium text-slate-400 truncate mb-1 uppercase tracking-wider">
+          <HighlightedText text={app.developer} highlight={highlight} />
         </p>
-      )}
-      
-      {downloadProgress !== undefined ? (
-        <motion.div 
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-1"
-        >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[8px] font-black text-aladeen-green uppercase tracking-widest animate-pulse">Installing</span>
-            <span className="text-[9px] font-black text-aladeen-green">{Math.floor(downloadProgress)}%</span>
+        
+        {downloadProgress !== undefined ? (
+          <motion.div 
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-2"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[8px] font-black text-aladeen-green uppercase tracking-widest animate-pulse">Installing</span>
+              <span className="text-[9px] font-black text-aladeen-green">{Math.floor(downloadProgress)}%</span>
+            </div>
+            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+              <motion.div 
+                className="h-full bg-aladeen-green rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${downloadProgress}%` }}
+                transition={{ type: 'spring', bounce: 0, duration: 0.2 }}
+              />
+            </div>
+          </motion.div>
+        ) : (
+          <div className={`flex items-center gap-1.5 mt-2 ${variant === 'compact' ? 'justify-center' : ''}`}>
+            <div className="flex items-center gap-0.5 bg-slate-50 px-1.5 py-0.5 rounded-md">
+              <span className="text-[10px] font-black text-slate-700">{app.rating}</span>
+              <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
+            </div>
+            <span className="text-[10px] font-bold text-slate-300 ml-auto">{app.size}</span>
           </div>
-          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-50 shadow-inner">
-            <motion.div 
-              className="h-full bg-aladeen-green rounded-full shadow-[0_0_10px_rgba(0,255,135,0.3)]"
-              initial={{ width: 0 }}
-              animate={{ width: `${downloadProgress}%` }}
-              transition={{ type: 'spring', bounce: 0, duration: 0.2 }}
-            />
-          </div>
-        </motion.div>
-      ) : (
-        <div className={`flex items-center gap-1.5 ${variant === 'compact' ? 'justify-center' : ''}`}>
-          <div className="flex items-center gap-0.5 bg-slate-50 px-1.5 py-0.5 rounded-md">
-            <span className="text-[10px] font-black text-slate-700">{app.rating}</span>
-            <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
-          </div>
-          <span className="text-[10px] font-bold text-slate-300 ml-auto">{app.size}</span>
-        </div>
-      )}
-    </div>
-  </motion.div>
+        )}
+      </div>
+    </motion.div>
   );
 };
 
@@ -344,24 +388,32 @@ const CategoryIcon = ({ icon }: { icon: string }) => {
 };
 
 const Section = ({ title, apps, onAppClick, onViewAll, icon: Icon, downloadingApps = {} }: { title: string; apps: AppData[]; onAppClick: (app: AppData) => void; onViewAll?: () => void; icon?: any; downloadingApps?: Record<string, number> }) => (
-  <div className="mb-10">
-    <div className="flex items-center justify-between px-6 mb-4">
-      <div className="flex items-center gap-2">
-        {Icon && <Icon className="w-5 h-5 text-aladeen-green" />}
-        <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+  <div className="mb-24">
+    <div className="flex items-center justify-between px-6 mb-10">
+      <div className="flex items-center gap-4">
+        {Icon && (
+          <div className="w-12 h-12 bg-aladeen-green/10 rounded-2xl flex items-center justify-center text-aladeen-green shadow-sm">
+            <Icon className="w-6 h-6" />
+          </div>
+        )}
+        <div>
+          <h2 className="text-3xl font-display font-extrabold text-slate-900 tracking-tight">{title}</h2>
+          <div className="h-1 w-12 bg-aladeen-green rounded-full mt-1.5" />
+        </div>
       </div>
       {onViewAll && (
         <button 
           onClick={onViewAll}
-          className="text-sm font-bold text-aladeen-green hover:underline"
+          className="group flex items-center gap-2 px-5 py-2.5 bg-slate-50 hover:bg-aladeen-green hover:text-white rounded-xl text-sm font-bold text-slate-600 transition-all shadow-sm"
         >
           View All
+          <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
         </button>
       )}
     </div>
-    <div className="flex overflow-x-auto no-scrollbar gap-4 px-6 pb-4">
+    <div className="flex overflow-x-auto no-scrollbar gap-8 px-6 pb-8">
       {apps.map(app => (
-        <div key={app.id} className="min-w-[140px] max-w-[140px]">
+        <div key={app.id} className="min-w-[220px] max-w-[220px] sm:min-w-[240px] sm:max-w-[240px]">
           <AppCard app={app} onClick={() => onAppClick(app)} downloadProgress={downloadingApps[app.id]} />
         </div>
       ))}
@@ -402,10 +454,17 @@ const AppDetail = ({
   const [isAboutExpanded, setIsAboutExpanded] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   const [showUninstallConfirm, setShowUninstallConfirm] = useState(false);
+
   const [hoverRating, setHoverRating] = useState(0);
   const [tempRating, setTempRating] = useState(userReview?.rating || 0);
   const [comment, setComment] = useState(userReview?.comment || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const relatedApps = useMemo(() => {
+    return apps
+      .filter(a => a.category === app.category && a.id !== app.id)
+      .slice(0, 4);
+  }, [apps, app]);
 
   const handleShare = async () => {
     const shareData = {
@@ -1226,7 +1285,11 @@ const AdminDashboard = ({
   
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientData | null>(null);
+  const [clientSortField, setClientSortField] = useState<'onBoardDate' | 'notes'>('onBoardDate');
   const [clientSortOrder, setClientSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showNotesColumn, setShowNotesColumn] = useState(true);
+  const [appSearch, setAppSearch] = useState('');
+  const [clientSearch, setClientSearch] = useState('');
   const [clientFormData, setClientFormData] = useState<Partial<ClientData>>({
     name: '',
     onBoardDate: new Date().toISOString().split('T')[0],
@@ -1282,13 +1345,35 @@ const AdminDashboard = ({
     };
   }, [apps]);
 
+  const adminFilteredApps = useMemo(() => {
+    return apps.filter(app => 
+      app.name.toLowerCase().includes(appSearch.toLowerCase()) ||
+      app.developer.toLowerCase().includes(appSearch.toLowerCase()) ||
+      app.category.toLowerCase().includes(appSearch.toLowerCase())
+    );
+  }, [apps, appSearch]);
+
   const sortedClients = useMemo(() => {
-    return [...clients].sort((a, b) => {
-      const dateA = new Date(a.onBoardDate).getTime();
-      const dateB = new Date(b.onBoardDate).getTime();
-      return clientSortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    const filtered = clients.filter(client => 
+      client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+      (client.notes || '').toLowerCase().includes(clientSearch.toLowerCase()) ||
+      client.contactNumber.includes(clientSearch)
+    );
+    return [...filtered].sort((a, b) => {
+      let valA, valB;
+      if (clientSortField === 'onBoardDate') {
+        valA = new Date(a.onBoardDate).getTime();
+        valB = new Date(b.onBoardDate).getTime();
+      } else {
+        valA = (a.notes || '').toLowerCase();
+        valB = (b.notes || '').toLowerCase();
+      }
+      
+      if (valA < valB) return clientSortOrder === 'asc' ? -1 : 1;
+      if (valA > valB) return clientSortOrder === 'asc' ? 1 : -1;
+      return 0;
     });
-  }, [clients, clientSortOrder]);
+  }, [clients, clientSearch, clientSortField, clientSortOrder]);
 
   const handleApkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1438,22 +1523,56 @@ const AdminDashboard = ({
             </div>
           </div>
           {!isAdding && !isAddingClient && activeTab === 'manage' && (
-            <button 
-              onClick={() => setIsAdding(true)}
-              className="flex items-center gap-2 bg-aladeen-green text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all active:scale-95"
-            >
-              <PlusCircle className="w-5 h-5" />
-              Publish New APK
-            </button>
+            <div className="flex items-center gap-4">
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-aladeen-green transition-colors" />
+                <input 
+                  type="text"
+                  placeholder="Search apps..."
+                  value={appSearch}
+                  onChange={(e) => setAppSearch(e.target.value)}
+                  className="pl-12 pr-6 py-3 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all w-64"
+                />
+              </div>
+              <button 
+                onClick={() => setIsAdding(true)}
+                className="flex items-center gap-2 bg-aladeen-green text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all active:scale-95"
+              >
+                <PlusCircle className="w-5 h-5" />
+                Publish New APK
+              </button>
+            </div>
           )}
           {!isAdding && !isAddingClient && activeTab === 'clients' && (
-            <button 
-              onClick={() => setIsAddingClient(true)}
-              className="flex items-center gap-2 bg-aladeen-green text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all active:scale-95"
-            >
-              <PlusCircle className="w-5 h-5" />
-              Add New Client
-            </button>
+            <div className="flex items-center gap-4">
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-aladeen-green transition-colors" />
+                <input 
+                  type="text"
+                  placeholder="Search clients..."
+                  value={clientSearch}
+                  onChange={(e) => setClientSearch(e.target.value)}
+                  className="pl-12 pr-6 py-3 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all w-64"
+                />
+              </div>
+              <button 
+                onClick={() => setShowNotesColumn(!showNotesColumn)}
+                className={`flex items-center gap-2 px-4 py-3 rounded-2xl font-bold transition-all border ${
+                  showNotesColumn ? 'bg-aladeen-green/10 text-aladeen-green border-aladeen-green/20' : 'bg-white text-slate-400 border-slate-200'
+                }`}
+                title={showNotesColumn ? "Hide Notes Column" : "Show Notes Column"}
+              >
+                {showNotesColumn ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showNotesColumn ? 'Hide Notes' : 'Show Notes'}
+              </button>
+              <button 
+                onClick={() => setIsAddingClient(true)}
+                className="flex items-center gap-2 bg-aladeen-green text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all active:scale-95"
+              >
+                <PlusCircle className="w-5 h-5" />
+                Add New Client
+              </button>
+            </div>
           )}
         </div>
 
@@ -1897,13 +2016,38 @@ const AdminDashboard = ({
                       <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Client Name</th>
                       <th 
                         className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-aladeen-green transition-colors"
-                        onClick={() => setClientSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                        onClick={() => {
+                          if (clientSortField === 'onBoardDate') {
+                            setClientSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+                          } else {
+                            setClientSortField('onBoardDate');
+                            setClientSortOrder('desc');
+                          }
+                        }}
                       >
                         <div className="flex items-center gap-2">
                           On-board Date
-                          <ArrowUpDown className={`w-3 h-3 ${clientSortOrder === 'desc' ? 'text-aladeen-green' : 'text-slate-300'}`} />
+                          <ArrowUpDown className={`w-3 h-3 ${clientSortField === 'onBoardDate' ? 'text-aladeen-green' : 'text-slate-300'}`} />
                         </div>
                       </th>
+                      {showNotesColumn && (
+                        <th 
+                          className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-aladeen-green transition-colors"
+                          onClick={() => {
+                            if (clientSortField === 'notes') {
+                              setClientSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+                            } else {
+                              setClientSortField('notes');
+                              setClientSortOrder('asc');
+                            }
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            Notes
+                            <ArrowUpDown className={`w-3 h-3 ${clientSortField === 'notes' ? 'text-aladeen-green' : 'text-slate-300'}`} />
+                          </div>
+                        </th>
+                      )}
                       <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Website Link</th>
                       <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Facebook Link</th>
                       <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Contact Number</th>
@@ -1915,7 +2059,6 @@ const AdminDashboard = ({
                       <tr key={client.id} className="hover:bg-slate-50/30 transition-colors group">
                         <td className="px-6 py-4">
                           <div className="font-bold text-slate-900">{client.name}</div>
-                          {client.notes && <div className="text-[10px] text-slate-400 truncate max-w-[200px]">{client.notes}</div>}
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm font-bold text-slate-600 flex items-center gap-2">
@@ -1923,6 +2066,13 @@ const AdminDashboard = ({
                             {client.onBoardDate}
                           </div>
                         </td>
+                        {showNotesColumn && (
+                          <td className="px-6 py-4">
+                            <div className="text-xs text-slate-500 line-clamp-2 max-w-[200px]" title={client.notes}>
+                              {client.notes || <span className="text-slate-300 italic">No notes</span>}
+                            </div>
+                          </td>
+                        )}
                         <td className="px-6 py-4">
                           {client.website ? (
                             <a href={client.website} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-blue-500 hover:underline flex items-center gap-2">
@@ -2001,34 +2151,105 @@ const AdminDashboard = ({
             </div>
           )
         ) : activeTab === 'analytics' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl">
-              <div className="w-12 h-12 bg-aladeen-green/10 rounded-2xl flex items-center justify-center text-aladeen-green mb-6">
-                <Layout className="w-6 h-6" />
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-aladeen-green/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform" />
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-aladeen-green/10 rounded-2xl flex items-center justify-center text-aladeen-green mb-6">
+                    <Layout className="w-6 h-6" />
+                  </div>
+                  <div className="text-4xl font-black text-slate-900 mb-1">{stats.totalApps}</div>
+                  <div className="text-xs font-black text-slate-400 uppercase tracking-widest">Total Apps</div>
+                </div>
               </div>
-              <div className="text-3xl font-black text-slate-900 mb-1">{stats.totalApps}</div>
-              <div className="text-xs font-black text-slate-400 uppercase tracking-widest">Total Apps</div>
+              <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform" />
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 mb-6">
+                    <Download className="w-6 h-6" />
+                  </div>
+                  <div className="text-4xl font-black text-slate-900 mb-1">{stats.totalDownloads}</div>
+                  <div className="text-xs font-black text-slate-400 uppercase tracking-widest">Total Downloads</div>
+                </div>
+              </div>
+              <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-50 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform" />
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-yellow-50 rounded-2xl flex items-center justify-center text-yellow-500 mb-6">
+                    <Star className="w-6 h-6" />
+                  </div>
+                  <div className="text-4xl font-black text-slate-900 mb-1">{stats.avgRating}</div>
+                  <div className="text-xs font-black text-slate-400 uppercase tracking-widest">Avg Rating</div>
+                </div>
+              </div>
+              <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-50 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform" />
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-500 mb-6">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <div className="text-4xl font-black text-slate-900 mb-1">{clients.length}</div>
+                  <div className="text-xs font-black text-slate-400 uppercase tracking-widest">Total Clients</div>
+                </div>
+              </div>
             </div>
-            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl">
-              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 mb-6">
-                <Download className="w-6 h-6" />
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-bold text-slate-900">Top Performing Apps</h3>
+                  <TrendingUp className="w-5 h-5 text-aladeen-green" />
+                </div>
+                <div className="space-y-6">
+                  {[...apps].sort((a, b) => {
+                    const d1 = parseInt(a.downloads.replace(/[^0-9]/g, '')) || 0;
+                    const d2 = parseInt(b.downloads.replace(/[^0-9]/g, '')) || 0;
+                    return d2 - d1;
+                  }).slice(0, 5).map((app, i) => (
+                    <div key={app.id} className="flex items-center justify-between group">
+                      <div className="flex items-center gap-4">
+                        <div className="text-sm font-black text-slate-300 w-4">{i + 1}</div>
+                        <img src={app.icon} alt="" className="w-10 h-10 rounded-xl object-cover" referrerPolicy="no-referrer" />
+                        <div>
+                          <div className="text-sm font-bold text-slate-900 group-hover:text-aladeen-green transition-colors">{app.name}</div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{app.category}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-black text-slate-900">{app.downloads}</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Downloads</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="text-3xl font-black text-slate-900 mb-1">{stats.totalDownloads}</div>
-              <div className="text-xs font-black text-slate-400 uppercase tracking-widest">Total Downloads</div>
-            </div>
-            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl">
-              <div className="w-12 h-12 bg-yellow-50 rounded-2xl flex items-center justify-center text-yellow-500 mb-6">
-                <Star className="w-6 h-6" />
+
+              <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-bold text-slate-900">Recent Clients</h3>
+                  <Calendar className="w-5 h-5 text-aladeen-green" />
+                </div>
+                <div className="space-y-6">
+                  {[...clients].sort((a, b) => new Date(b.onBoardDate).getTime() - new Date(a.onBoardDate).getTime()).slice(0, 5).map((client) => (
+                    <div key={client.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
+                          <User className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-slate-900">{client.name}</div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{client.contactNumber}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-black text-slate-900">{client.onBoardDate}</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">On-boarded</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="text-3xl font-black text-slate-900 mb-1">{stats.avgRating}</div>
-              <div className="text-xs font-black text-slate-400 uppercase tracking-widest">Avg Rating</div>
-            </div>
-            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl">
-              <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-500 mb-6">
-                <Users className="w-6 h-6" />
-              </div>
-              <div className="text-3xl font-black text-slate-900 mb-1">{clients.length}</div>
-              <div className="text-xs font-black text-slate-400 uppercase tracking-widest">Total Clients</div>
             </div>
           </div>
         ) : (
@@ -2045,7 +2266,7 @@ const AdminDashboard = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {apps.map(app => (
+                  {adminFilteredApps.map(app => (
                     <tr key={app.id} className="hover:bg-slate-50/30 transition-colors group">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
@@ -2149,12 +2370,14 @@ export default function App() {
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAdminAuth, setIsAdminAuth] = useState(false);
 
   const [view, setView] = useState<'home' | 'listing' | 'profile' | 'admin'>('home');
 
   const handleLogin = (user: any) => {
     setCurrentUser(user);
     localStorage.setItem('aladeen_user', JSON.stringify(user));
+    setIsAdminAuth(false);
   };
 
   const handleLogout = () => {
@@ -2230,6 +2453,13 @@ export default function App() {
     const saved = localStorage.getItem('aladeen_reviews');
     return saved ? JSON.parse(saved) : {};
   });
+
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleInstall = (appId: string) => {
     const newInstalled = [...installedApps, appId];
@@ -2376,24 +2606,36 @@ export default function App() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="sticky top-0 bg-white/90 backdrop-blur-md z-40 border-b border-slate-50">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+      <header className={`sticky top-0 z-40 transition-all duration-500 ${
+        scrolled ? 'glass py-3 border-b border-slate-100/50 shadow-sm' : 'bg-white/0 py-6'
+      }`}>
+        <div className="max-w-5xl mx-auto px-6 flex items-center justify-between">
           <div 
-            className="text-2xl font-black text-aladeen-green cursor-pointer tracking-tighter"
+            className="text-3xl font-display font-black text-aladeen-green cursor-pointer tracking-tighter flex items-center gap-2"
             onClick={() => { setView('home'); setSelectedCategory(null); setSearchQuery(''); }}
           >
-            aladeen<span className="text-slate-900">.app</span>
+            <div className="w-10 h-10 bg-aladeen-green rounded-xl flex items-center justify-center text-white shadow-lg shadow-aladeen-green/20">
+              <ShoppingBag className="w-6 h-6" />
+            </div>
+            <span>aladeen<span className="text-slate-900">.app</span></span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button 
-              onClick={() => currentUser ? setView('profile') : setIsAuthModalOpen(true)}
-              className={`p-2 hover:bg-slate-50 rounded-xl transition-colors ${view === 'profile' ? 'text-aladeen-green bg-aladeen-green/5' : 'text-slate-700'}`}
-              title={currentUser ? "User Profile" : "Login"}
+              onClick={() => {
+                setIsAdminAuth(false);
+                currentUser ? setView('profile') : setIsAuthModalOpen(true);
+              }}
+              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all ${
+                view === 'profile' 
+                  ? 'text-aladeen-green bg-aladeen-green/10 shadow-sm' 
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
             >
-              {currentUser ? <User className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
+              <User className="w-5 h-5" />
+              <span className="hidden sm:inline">{currentUser ? currentUser.name : 'Sign In'}</span>
             </button>
-            <button className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
-              <Menu className="w-6 h-6 text-slate-700" />
+            <button className="p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-600">
+              <Menu className="w-6 h-6" />
             </button>
           </div>
         </div>
@@ -2414,175 +2656,247 @@ export default function App() {
           />
         ) : view === 'home' ? (
           <>
-            {/* Hero */}
-            <div className="px-6 py-12 text-center">
-              <motion.h1 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-4xl md:text-5xl font-black text-slate-900 mb-6 leading-[1.1] tracking-tight"
+            {/* Hero Section */}
+            <section className="relative px-6 pt-24 pb-32 overflow-hidden">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10">
+                <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-aladeen-green/5 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-aladeen-accent/5 rounded-full blur-[120px] animate-pulse" />
+              </div>
+
+              {/* Floating Decorative Elements */}
+              <motion.div 
+                animate={{ y: [0, -20, 0], rotate: [-12, -8, -12] }}
+                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute top-20 left-[5%] w-20 h-20 bg-white rounded-3xl shadow-2xl flex items-center justify-center text-aladeen-green hidden lg:flex border border-slate-50"
               >
-                All Your Favorite <br />
-                <span className="text-aladeen-green">Shopping Apps</span> in One Place
-              </motion.h1>
-              
-              <div className="relative max-w-xl mx-auto mb-12 z-30">
-                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                  <Search className="w-5 h-5 text-slate-400" />
-                </div>
-                <input 
-                  type="text" 
-                  placeholder="Search for apps (e.g. Daraz, Chaldal)" 
-                  className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all text-slate-700 shadow-sm"
-                  value={searchQuery}
-                  onFocus={() => setShowSuggestions(true)}
-                  onBlur={() => setTimeout(() => {
-                    setShowSuggestions(false);
-                    setSelectedIndex(-1);
-                  }, 200)}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setSelectedIndex(-1);
-                    if (e.target.value) {
-                      setShowSuggestions(true);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'ArrowDown') {
-                      e.preventDefault();
-                      setSelectedIndex(prev => (prev < suggestions.length ? prev + 1 : prev));
-                    } else if (e.key === 'ArrowUp') {
-                      e.preventDefault();
-                      setSelectedIndex(prev => (prev > -1 ? prev - 1 : prev));
-                    } else if (e.key === 'Enter') {
-                      if (selectedIndex === -1) {
-                        setView('listing');
-                        setShowSuggestions(false);
-                      } else if (selectedIndex === suggestions.length) {
-                        setView('listing');
-                        setShowSuggestions(false);
-                      } else {
-                        setSelectedApp(suggestions[selectedIndex]);
-                        setShowSuggestions(false);
-                      }
-                    } else if (e.key === 'Escape') {
+                <ShoppingBag className="w-10 h-10" />
+              </motion.div>
+              <motion.div 
+                animate={{ y: [0, 20, 0], rotate: [12, 15, 12] }}
+                transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                className="absolute top-40 right-[5%] w-24 h-24 bg-white rounded-[2rem] shadow-2xl flex items-center justify-center text-aladeen-accent hidden lg:flex border border-slate-50"
+              >
+                <Smartphone className="w-12 h-12" />
+              </motion.div>
+              <motion.div 
+                animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute bottom-20 left-[15%] w-32 h-32 bg-aladeen-green/10 rounded-full blur-2xl hidden lg:block"
+              />
+
+              <div className="max-w-5xl mx-auto text-center relative z-10">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="inline-flex items-center gap-2 px-5 py-2 bg-aladeen-green/10 text-aladeen-green rounded-full text-[11px] font-bold uppercase tracking-[0.2em] mb-10 shadow-sm border border-aladeen-green/10"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>The Future of E-commerce in Bangladesh</span>
+                </motion.div>
+                
+                <motion.h1 
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                  className="text-6xl md:text-8xl font-display font-extrabold text-slate-900 mb-10 tracking-tight leading-[1.02]"
+                >
+                  Discover the Best <br />
+                  <span className="text-gradient">Shopping Apps</span>
+                </motion.h1>
+                
+                <motion.p 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.8 }}
+                  className="text-slate-500 text-xl md:text-2xl mb-14 max-w-3xl mx-auto leading-relaxed font-medium"
+                >
+                  Access a curated collection of verified, high-performance Android applications for the ultimate shopping experience in Bangladesh.
+                </motion.p>
+
+                <div className="relative max-w-2xl mx-auto mb-24 z-30">
+                  <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+                    <Search className="w-6 h-6 text-slate-300" />
+                  </div>
+                  <input 
+                    type="text" 
+                    placeholder="Search for apps (e.g. Daraz, Chaldal)" 
+                    className="w-full pl-16 pr-16 py-6 bg-white border border-slate-100 rounded-[2.5rem] outline-none focus:ring-8 focus:ring-aladeen-green/5 focus:border-aladeen-green transition-all text-slate-700 shadow-premium text-xl font-medium"
+                    value={searchQuery}
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => {
                       setShowSuggestions(false);
                       setSelectedIndex(-1);
-                    }
-                  }}
-                />
-
-                {searchQuery && (
-                  <button 
-                    onClick={() => {
-                      setSearchQuery('');
+                    }, 200)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
                       setSelectedIndex(-1);
+                      if (e.target.value) {
+                        setShowSuggestions(true);
+                      }
                     }}
-                    className="absolute inset-y-0 right-4 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                )}
-
-                <AnimatePresence>
-                  {showSuggestions && suggestions.length > 0 && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50"
-                    >
-                      {suggestions.map((app, index) => (
-                        <button
-                          key={app.id}
-                          onClick={() => {
-                            setSelectedApp(app);
-                            setShowSuggestions(false);
-                          }}
-                          onMouseEnter={() => setSelectedIndex(index)}
-                          className={`w-full flex items-center gap-4 p-4 transition-colors text-left border-b border-slate-50 last:border-0 ${
-                            selectedIndex === index ? 'bg-slate-50' : 'hover:bg-slate-50'
-                          }`}
-                        >
-                          <img src={app.icon} alt={app.name} className="w-10 h-10 rounded-xl object-cover" referrerPolicy="no-referrer" />
-                          <div>
-                            <div className="text-sm font-black text-slate-900">
-                              <HighlightedText text={app.name} highlight={searchQuery} />
-                            </div>
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                              <HighlightedText text={app.developer} highlight={searchQuery} />
-                            </div>
-                          </div>
-                          <div className="ml-auto flex items-center gap-1 text-aladeen-green">
-                            <Star className="w-3 h-3 fill-current" />
-                            <span className="text-xs font-black">{app.rating}</span>
-                          </div>
-                        </button>
-                      ))}
-                      <button 
-                        onClick={() => {
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setSelectedIndex(prev => (prev < suggestions.length ? prev + 1 : prev));
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setSelectedIndex(prev => (prev > -1 ? prev - 1 : prev));
+                      } else if (e.key === 'Enter') {
+                        if (selectedIndex === -1) {
                           setView('listing');
                           setShowSuggestions(false);
-                        }}
-                        onMouseEnter={() => setSelectedIndex(suggestions.length)}
-                        className={`w-full p-4 text-aladeen-green text-xs font-black uppercase tracking-widest transition-colors ${
-                          selectedIndex === suggestions.length ? 'bg-slate-100' : 'bg-slate-50 hover:bg-slate-100'
-                        }`}
-                      >
-                        See all results for "{searchQuery}"
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                        } else if (selectedIndex === suggestions.length) {
+                          setView('listing');
+                          setShowSuggestions(false);
+                        } else {
+                          setSelectedApp(suggestions[selectedIndex]);
+                          setShowSuggestions(false);
+                        }
+                      } else if (e.key === 'Escape') {
+                        setShowSuggestions(false);
+                        setSelectedIndex(-1);
+                      }
+                    }}
+                  />
 
-              {/* Categories Grid */}
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-4 mb-12">
-                {CATEGORIES.map(cat => (
-                  <motion.div 
-                    key={cat.name}
-                    whileHover={{ y: -4 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setSelectedCategoryDetail(cat)}
-                    className="flex flex-col items-center gap-2 cursor-pointer group"
-                  >
-                    <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-aladeen-green group-hover:text-white transition-all shadow-sm">
-                      <CategoryIcon icon={cat.icon} />
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{cat.name}</span>
-                  </motion.div>
-                ))}
+                  {searchQuery && (
+                    <button 
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSelectedIndex(-1);
+                      }}
+                      className="absolute inset-y-0 right-6 flex items-center text-slate-300 hover:text-slate-500 transition-colors"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  )}
+
+                  <AnimatePresence>
+                    {showSuggestions && suggestions.length > 0 && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 15 }}
+                        className="absolute top-full left-0 right-0 mt-6 bg-white rounded-[2.5rem] shadow-premium border border-slate-100 overflow-hidden z-50 py-3"
+                      >
+                        {suggestions.map((app, index) => (
+                          <button
+                            key={app.id}
+                            onClick={() => {
+                              setSelectedApp(app);
+                              setShowSuggestions(false);
+                            }}
+                            onMouseEnter={() => setSelectedIndex(index)}
+                            className={`w-full flex items-center gap-5 px-8 py-5 transition-colors text-left ${
+                              selectedIndex === index ? 'bg-slate-50' : 'hover:bg-slate-50'
+                            }`}
+                          >
+                            <img src={app.icon} alt={app.name} className="w-14 h-14 rounded-2xl object-cover shadow-sm" referrerPolicy="no-referrer" />
+                            <div className="flex-1">
+                              <div className="text-lg font-bold text-slate-900 leading-tight">
+                                <HighlightedText text={app.name} highlight={searchQuery} />
+                              </div>
+                              <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                <HighlightedText text={app.developer} highlight={searchQuery} />
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 px-4 py-1.5 bg-aladeen-green/5 rounded-full text-aladeen-green">
+                              <Star className="w-3.5 h-3.5 fill-current" />
+                              <span className="text-sm font-bold">{app.rating}</span>
+                            </div>
+                          </button>
+                        ))}
+                        <button 
+                          onClick={() => {
+                            setView('listing');
+                            setShowSuggestions(false);
+                          }}
+                          onMouseEnter={() => setSelectedIndex(suggestions.length)}
+                          className={`w-full p-6 text-aladeen-green text-sm font-bold uppercase tracking-[0.2em] transition-colors border-t border-slate-50 ${
+                            selectedIndex === suggestions.length ? 'bg-slate-50' : 'bg-white hover:bg-slate-50'
+                          }`}
+                        >
+                          See all results for "{searchQuery}"
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Categories Grid */}
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-6 mb-8">
+                  {CATEGORIES.map(cat => (
+                    <motion.div 
+                      key={cat.name}
+                      whileHover={{ y: -8 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setSelectedCategoryDetail(cat)}
+                      className="flex flex-col items-center gap-4 cursor-pointer group"
+                    >
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] bg-white flex items-center justify-center text-slate-400 group-hover:bg-aladeen-green group-hover:text-white transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-aladeen-green/20 border border-slate-100 group-hover:border-transparent">
+                        <CategoryIcon icon={cat.icon} />
+                      </div>
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-aladeen-green transition-colors">{cat.name}</span>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-            </div>
+            </section>
+
+            {/* Why Aladeen Section */}
+            <section className="px-6 py-32 bg-slate-50/30">
+              <div className="max-w-6xl mx-auto">
+                <div className="text-center mb-20">
+                  <h2 className="text-4xl md:text-5xl font-display font-extrabold text-slate-900 mb-6 tracking-tight">Why Choose Aladeen?</h2>
+                  <p className="text-slate-500 text-lg max-w-2xl mx-auto font-medium">We provide the most secure and efficient way to access e-commerce apps in Bangladesh.</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                  {[
+                    { title: 'Verified APKs', desc: 'Every app is manually checked for security and performance.', icon: ShieldCheck },
+                    { title: 'Fast Delivery', desc: 'Direct download links with high-speed servers for instant access.', icon: Zap },
+                    { title: 'Curated List', desc: 'Only the top-rated and most reliable shopping apps are listed.', icon: Sparkles },
+                  ].map((feature, i) => (
+                    <div key={i} className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 hover:shadow-premium transition-all group">
+                      <div className="w-16 h-16 bg-aladeen-green/10 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-aladeen-green group-hover:text-white transition-colors">
+                        <feature.icon className="w-8 h-8 text-aladeen-green group-hover:text-white" />
+                      </div>
+                      <h3 className="text-2xl font-display font-bold text-slate-900 mb-4">{feature.title}</h3>
+                      <p className="text-slate-500 text-base leading-relaxed font-medium">{feature.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
 
             {/* Featured Category */}
-            <div className="px-6 mb-12">
+            <div className="px-6 mb-20">
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="bg-aladeen-green rounded-[2.5rem] p-8 md:p-12 text-white relative overflow-hidden shadow-2xl shadow-aladeen-green/20"
+                className="bg-aladeen-green rounded-[3rem] p-10 md:p-16 text-white relative overflow-hidden shadow-2xl shadow-aladeen-green/20"
               >
-                <div className="relative z-10 max-w-md">
-                  <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-6">
-                    <Sparkles className="w-3.5 h-3.5" />
+                <div className="relative z-10 max-w-lg">
+                  <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest mb-8 border border-white/10">
+                    <Sparkles className="w-4 h-4" />
                     Featured Category
                   </div>
-                  <h2 className="text-3xl md:text-4xl font-black mb-4 leading-tight">Fresh Groceries, <br />Delivered Fast.</h2>
-                  <p className="text-white/80 text-sm md:text-base mb-8 leading-relaxed">
+                  <h2 className="text-4xl md:text-6xl font-display font-extrabold mb-6 leading-tight tracking-tight">Fresh Groceries, <br />Delivered Fast.</h2>
+                  <p className="text-white/90 text-lg md:text-xl mb-10 leading-relaxed font-medium">
                     Discover the best grocery apps in Bangladesh. From fresh produce to daily essentials, get everything delivered to your doorstep in minutes.
                   </p>
                   <button 
                     onClick={() => setSelectedCategoryDetail(CATEGORIES.find(c => c.name === 'Grocery') || null)}
-                    className="bg-white text-aladeen-green px-8 py-4 rounded-2xl font-black text-sm hover:bg-slate-50 transition-all active:scale-95 shadow-xl"
+                    className="bg-white text-aladeen-green px-10 py-5 rounded-2xl font-bold text-base hover:bg-slate-50 transition-all active:scale-95 shadow-xl"
                   >
                     Explore Grocery Apps
                   </button>
                 </div>
                 
                 {/* Decorative Elements */}
-                <div className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-                <div className="absolute bottom-0 right-0 translate-y-1/4 translate-x-1/4 w-96 h-96 bg-aladeen-dark/20 rounded-full blur-3xl" />
-                <Utensils className="absolute bottom-[-20px] right-[-20px] w-64 h-64 text-white/5 -rotate-12" />
+                <div className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
+                <div className="absolute bottom-0 right-0 translate-y-1/4 translate-x-1/4 w-[30rem] h-[30rem] bg-aladeen-dark/20 rounded-full blur-3xl" />
+                <Utensils className="absolute bottom-[-40px] right-[-40px] w-80 h-80 text-white/5 -rotate-12" />
               </motion.div>
             </div>
 
@@ -2690,6 +3004,79 @@ export default function App() {
         )}
       </main>
 
+      <footer className="bg-slate-950 text-white py-24 px-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full -z-10">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-aladeen-green/5 rounded-full blur-[100px]" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-aladeen-accent/5 rounded-full blur-[100px]" />
+        </div>
+
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-20">
+            <div className="col-span-1 md:col-span-2">
+              <div className="text-4xl font-display font-black text-aladeen-green mb-8 tracking-tighter flex items-center gap-3">
+                <div className="w-12 h-12 bg-aladeen-green rounded-2xl flex items-center justify-center text-white shadow-lg shadow-aladeen-green/20">
+                  <ShoppingBag className="w-7 h-7" />
+                </div>
+                <span>aladeen<span className="text-white">.app</span></span>
+              </div>
+              <p className="text-slate-400 text-xl max-w-md leading-relaxed mb-10 font-medium">
+                The most trusted platform for discovering and downloading verified Android applications in Bangladesh. Experience e-commerce like never before.
+              </p>
+              <div className="flex items-center gap-5">
+                {[
+                  { icon: Facebook, label: 'Facebook' },
+                  { icon: Twitter, label: 'Twitter' },
+                  { icon: Instagram, label: 'Instagram' },
+                  { icon: Linkedin, label: 'LinkedIn' }
+                ].map(social => (
+                  <a 
+                    key={social.label} 
+                    href="#" 
+                    className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center hover:bg-aladeen-green hover:text-white transition-all hover:-translate-y-1 border border-white/5"
+                  >
+                    <social.icon className="w-5 h-5" />
+                  </a>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-[0.2em] mb-8 text-white/50">Quick Links</h4>
+              <ul className="space-y-5">
+                {['Home', 'All Apps', 'Categories', 'About Us', 'Contact'].map(link => (
+                  <li key={link}>
+                    <a href="#" className="text-slate-400 hover:text-aladeen-green transition-colors font-bold text-lg">{link}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-[0.2em] mb-8 text-white/50">Admin & Support</h4>
+              <ul className="space-y-5">
+                <li>
+                  <button 
+                    onClick={() => { setIsAdminAuth(true); setIsAuthModalOpen(true); }}
+                    className="text-slate-400 hover:text-aladeen-green transition-colors font-bold text-lg"
+                  >
+                    Admin Portal
+                  </button>
+                </li>
+                <li><a href="#" className="text-slate-400 hover:text-aladeen-green transition-colors font-bold text-lg">Developer API</a></li>
+                <li><a href="#" className="text-slate-400 hover:text-aladeen-green transition-colors font-bold text-lg">Terms of Service</a></li>
+                <li><a href="#" className="text-slate-400 hover:text-aladeen-green transition-colors font-bold text-lg">Privacy Policy</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-slate-500 text-sm font-bold">
+            <p>© 2026 aladeen.app. All rights reserved.</p>
+            <div className="flex items-center gap-2">
+              <span>Made with</span>
+              <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+              <span>in Bangladesh</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
       {/* App Detail Overlay */}
       <AnimatePresence>
         {selectedApp && (
@@ -2700,11 +3087,6 @@ export default function App() {
             apps={allApps}
             isInstalled={installedApps.includes(selectedApp.id)}
             onInstall={() => {
-              if (!currentUser) {
-                setIsAuthModalOpen(true);
-                toast.info('Please login to download apps');
-                return;
-              }
               startDownload(selectedApp.id);
             }}
             onUninstall={() => handleUninstall(selectedApp.id)}
@@ -2726,8 +3108,12 @@ export default function App() {
 
       <AuthModal 
         isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setIsAdminAuth(false);
+        }} 
         onLogin={handleLogin} 
+        isAdminMode={isAdminAuth}
       />
 
       {/* Category Detail Overlay */}
@@ -2747,19 +3133,28 @@ export default function App() {
       </AnimatePresence>
 
       {/* Footer (Minimal) */}
-      <footer className="bg-slate-50 py-12 px-6 border-t border-slate-100">
+      <footer className="bg-slate-50 py-16 px-6 border-t border-slate-100">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="text-xl font-black text-aladeen-green mb-4 tracking-tighter">
+          <div 
+            className="text-2xl font-black text-aladeen-green mb-4 tracking-tighter cursor-pointer hover:opacity-80 transition-opacity inline-block"
+            onClick={() => {
+              setIsAdminAuth(true);
+              setIsAuthModalOpen(true);
+            }}
+          >
             aladeen<span className="text-slate-900">.app</span>
           </div>
-          <p className="text-slate-400 text-xs mb-6">
+          <p className="text-slate-400 text-sm mb-8 max-w-md mx-auto">
             The cleanest platform for Bangladeshi e-commerce APKs. <br />
-            Safe, verified, and fast.
+            Safe, verified, and fast delivery for all your shopping needs.
           </p>
-          <div className="flex justify-center gap-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            <a href="#" className="hover:text-aladeen-green transition-colors">Privacy</a>
-            <a href="#" className="hover:text-aladeen-green transition-colors">Terms</a>
-            <a href="#" className="hover:text-aladeen-green transition-colors">Contact</a>
+          <div className="flex justify-center gap-8 text-xs font-bold text-slate-400 uppercase tracking-widest">
+            <a href="#" className="hover:text-aladeen-green transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-aladeen-green transition-colors">Terms of Service</a>
+            <a href="#" className="hover:text-aladeen-green transition-colors">Contact Support</a>
+          </div>
+          <div className="mt-12 pt-8 border-t border-slate-200/50 text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">
+            © 2026 Aladeen App Store. All Rights Reserved.
           </div>
         </div>
       </footer>
