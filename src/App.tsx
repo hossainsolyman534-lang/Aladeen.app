@@ -46,10 +46,15 @@ import {
   Activity,
   Phone,
   Lock,
-  LogOut
+  LogOut,
+  Globe,
+  Facebook,
+  Calendar,
+  Play,
+  Video
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MOCK_APPS, AppData, CATEGORIES, MOCK_REVIEWS, CategoryData } from './constants';
+import { MOCK_APPS, AppData, CATEGORIES, MOCK_REVIEWS, CategoryData, ClientData, MOCK_CLIENTS } from './constants';
 
 // --- Components ---
 
@@ -244,26 +249,37 @@ const HighlightedText = ({ text, highlight }: { text: string; highlight: string 
   );
 };
 
-const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default' | 'compact'; highlight?: string; downloadProgress?: number }> = ({ app, onClick, variant = 'default', highlight = '', downloadProgress }) => (
-  <motion.div 
-    whileHover={{ y: -6 }}
-    whileTap={{ scale: 0.98 }}
-    onClick={onClick}
-    className={`bg-white rounded-[2rem] border border-slate-100 overflow-hidden cursor-pointer group transition-all duration-300 ${variant === 'compact' ? 'p-3' : 'p-5'}`}
-  >
-    <div className={`aspect-square rounded-2xl overflow-hidden mb-4 shadow-sm relative transition-transform duration-300 group-hover:scale-105 ${variant === 'compact' ? 'w-16 h-16 mx-auto' : 'w-full'}`}>
-      <img 
-        src={app.icon} 
-        alt={app.name} 
-        className="w-full h-full object-cover"
-        referrerPolicy="no-referrer"
-      />
-      {app.isVerified && (
-        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full p-1 shadow-sm border border-slate-50">
-          <CheckCircle2 className="w-3.5 h-3.5 text-aladeen-green fill-aladeen-green/10" />
-        </div>
-      )}
-    </div>
+const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default' | 'compact'; highlight?: string; downloadProgress?: number }> = ({ app, onClick, variant = 'default', highlight = '', downloadProgress }) => {
+  const isExpired = app.expiryDate ? new Date(app.expiryDate) < new Date() : false;
+
+  return (
+    <motion.div 
+      whileHover={{ y: -6 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className={`bg-white rounded-[2rem] border border-slate-100 overflow-hidden cursor-pointer group transition-all duration-300 ${variant === 'compact' ? 'p-3' : 'p-5'}`}
+    >
+      <div className={`aspect-square rounded-2xl overflow-hidden mb-4 shadow-sm relative transition-transform duration-300 group-hover:scale-105 ${variant === 'compact' ? 'w-16 h-16 mx-auto' : 'w-full'}`}>
+        <img 
+          src={app.icon} 
+          alt={app.name} 
+          className="w-full h-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+        {app.isVerified && (
+          <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full p-1 shadow-sm border border-slate-50">
+            <CheckCircle2 className="w-3.5 h-3.5 text-aladeen-green fill-aladeen-green/10" />
+          </div>
+        )}
+        {isExpired && (
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center p-2">
+            <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1 shadow-lg">
+              <Calendar className="w-3 h-3 text-rose-500" />
+              <span className="text-[8px] font-black text-rose-600 uppercase tracking-widest">Expired</span>
+            </div>
+          </div>
+        )}
+      </div>
     <div className={variant === 'compact' ? 'text-center' : ''}>
       <h3 className={`font-bold text-slate-900 truncate mb-0.5 ${variant === 'compact' ? 'text-xs' : 'text-sm'}`}>
         <HighlightedText text={app.name} highlight={highlight} />
@@ -307,7 +323,8 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
       )}
     </div>
   </motion.div>
-);
+  );
+};
 
 const CategoryIcon = ({ icon }: { icon: string }) => {
   switch (icon) {
@@ -414,7 +431,13 @@ const AppDetail = ({
     }
   };
 
+  const isExpired = app.expiryDate ? new Date(app.expiryDate) < new Date() : false;
+
   const handleDownload = () => {
+    if (isExpired) {
+      toast.error("This app has expired and cannot be downloaded.");
+      return;
+    }
     if (isInstalled) return;
     onInstall();
   };
@@ -537,11 +560,22 @@ const AppDetail = ({
 
         <div className="flex flex-col gap-4 mb-10">
           <div className="flex flex-col gap-4">
+            {isExpired && (
+              <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl flex items-center gap-3 mb-2">
+                <div className="bg-rose-100 p-2 rounded-xl">
+                  <Calendar className="w-5 h-5 text-rose-500" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-rose-600">App Expired</div>
+                  <div className="text-[10px] text-rose-400 font-medium">This app reached its expiry date on {app.expiryDate}</div>
+                </div>
+              </div>
+            )}
             <button 
               onClick={isInstalled ? handleOpen : handleDownload}
-              disabled={isDownloading || isOpening}
+              disabled={isDownloading || isOpening || (isExpired && !isInstalled)}
               className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition-all flex items-center justify-center gap-2 ${
-                isDownloading || isOpening
+                isDownloading || isOpening || (isExpired && !isInstalled)
                   ? 'bg-slate-50 text-slate-400 cursor-not-allowed shadow-none' 
                   : 'bg-aladeen-green text-white hover:bg-aladeen-dark active:scale-[0.98] shadow-aladeen-green/20'
               }`}
@@ -632,6 +666,45 @@ const AppDetail = ({
             </div>
           </div>
         </div>
+
+        {app.promoVideo && (
+          <div className="mb-10">
+            <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <Video className="w-5 h-5 text-aladeen-green" />
+              Promo Video
+            </h2>
+            <div className="aspect-video w-full rounded-[2rem] overflow-hidden shadow-xl border border-slate-100 bg-slate-900 relative group">
+              {app.promoVideo.includes('youtube.com') || app.promoVideo.includes('youtu.be') ? (
+                <iframe 
+                  className="w-full h-full"
+                  src={`https://www.youtube.com/embed/${
+                    app.promoVideo.includes('v=') 
+                      ? app.promoVideo.split('v=')[1].split('&')[0] 
+                      : app.promoVideo.split('/').pop()
+                  }`}
+                  title="YouTube video player"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-white gap-4 p-6 text-center">
+                  <div className="w-20 h-20 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center group-hover:scale-110 transition-transform cursor-pointer">
+                    <Play className="w-10 h-10 fill-white ml-1" />
+                  </div>
+                  <a 
+                    href={app.promoVideo} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm font-bold hover:underline"
+                  >
+                    Watch Promo Video
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="mb-10">
           <h2 className="text-lg font-bold text-slate-900 mb-4">Screenshots</h2>
@@ -1131,17 +1204,37 @@ const AdminDashboard = ({
   onAddApp, 
   onUpdateApp, 
   onDeleteApp, 
+  clients,
+  onAddClient,
+  onUpdateClient,
+  onDeleteClient,
   onBack 
 }: { 
   apps: AppData[]; 
   onAddApp: (app: AppData) => void; 
   onUpdateApp: (app: AppData) => void; 
   onDeleteApp: (appId: string) => void; 
+  clients: ClientData[];
+  onAddClient: (client: ClientData) => void;
+  onUpdateClient: (client: ClientData) => void;
+  onDeleteClient: (clientId: string) => void;
   onBack: () => void; 
 }) => {
-  const [activeTab, setActiveTab] = useState<'manage' | 'analytics'>('manage');
+  const [activeTab, setActiveTab] = useState<'manage' | 'analytics' | 'clients'>('manage');
   const [isAdding, setIsAdding] = useState(false);
   const [editingApp, setEditingApp] = useState<AppData | null>(null);
+  
+  const [isAddingClient, setIsAddingClient] = useState(false);
+  const [editingClient, setEditingClient] = useState<ClientData | null>(null);
+  const [clientFormData, setClientFormData] = useState<Partial<ClientData>>({
+    name: '',
+    onBoardDate: new Date().toISOString().split('T')[0],
+    website: '',
+    facebook: '',
+    contactNumber: '',
+    notes: ''
+  });
+
   const [uploadingApk, setUploadingApk] = useState(false);
   const [apkProgress, setApkProgress] = useState(0);
   const [formData, setFormData] = useState<Partial<AppData>>({
@@ -1163,7 +1256,8 @@ const AdminDashboard = ({
     isTrending: false,
     addedAt: new Date().toISOString(),
     reviews_list: [],
-    apkUrl: ''
+    apkUrl: '',
+    expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
   });
 
   const stats = useMemo(() => {
@@ -1214,21 +1308,7 @@ const AdminDashboard = ({
     }, 300);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingApp) {
-      onUpdateApp({ ...editingApp, ...formData } as AppData);
-      setEditingApp(null);
-    } else {
-      const newApp: AppData = {
-        ...formData,
-        id: `app-${Date.now()}`,
-        addedAt: new Date().toISOString(),
-        reviews_list: []
-      } as AppData;
-      onAddApp(newApp);
-      setIsAdding(false);
-    }
+  const resetForm = () => {
     setFormData({
       name: '',
       developer: '',
@@ -1248,8 +1328,66 @@ const AdminDashboard = ({
       isTrending: false,
       addedAt: new Date().toISOString(),
       reviews_list: [],
-      apkUrl: ''
+      apkUrl: '',
+      expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
     });
+    setEditingApp(null);
+    setIsAdding(false);
+  };
+
+  const resetClientForm = () => {
+    setClientFormData({
+      name: '',
+      onBoardDate: new Date().toISOString().split('T')[0],
+      website: '',
+      facebook: '',
+      contactNumber: '',
+      notes: ''
+    });
+    setEditingClient(null);
+    setIsAddingClient(false);
+  };
+
+  const handleClientSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingClient) {
+      onUpdateClient({ ...editingClient, ...clientFormData } as ClientData);
+    } else {
+      const newClient: ClientData = {
+        ...clientFormData,
+        id: `client-${Date.now()}`
+      } as ClientData;
+      onAddClient(newClient);
+    }
+    resetClientForm();
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate expiry date
+    if (formData.expiryDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedDate = new Date(formData.expiryDate);
+      if (selectedDate <= today) {
+        toast.error('Expiry date must be in the future (tomorrow or later)');
+        return;
+      }
+    }
+
+    if (editingApp) {
+      onUpdateApp({ ...editingApp, ...formData } as AppData);
+    } else {
+      const newApp: AppData = {
+        ...formData,
+        id: `app-${Date.now()}`,
+        addedAt: new Date().toISOString(),
+        reviews_list: []
+      } as AppData;
+      onAddApp(newApp);
+    }
+    resetForm();
   };
 
   const handleEdit = (app: AppData) => {
@@ -1281,16 +1419,31 @@ const AdminDashboard = ({
                 >
                   Analytics
                 </button>
+                <button 
+                  onClick={() => setActiveTab('clients')}
+                  className={`text-sm font-bold transition-colors ${activeTab === 'clients' ? 'text-aladeen-green' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  Clients
+                </button>
               </div>
             </div>
           </div>
-          {!isAdding && activeTab === 'manage' && (
+          {!isAdding && !isAddingClient && activeTab === 'manage' && (
             <button 
               onClick={() => setIsAdding(true)}
               className="flex items-center gap-2 bg-aladeen-green text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all active:scale-95"
             >
               <PlusCircle className="w-5 h-5" />
               Publish New APK
+            </button>
+          )}
+          {!isAdding && !isAddingClient && activeTab === 'clients' && (
+            <button 
+              onClick={() => setIsAddingClient(true)}
+              className="flex items-center gap-2 bg-aladeen-green text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all active:scale-95"
+            >
+              <PlusCircle className="w-5 h-5" />
+              Add New Client
             </button>
           )}
         </div>
@@ -1335,7 +1488,7 @@ const AdminDashboard = ({
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-xl font-bold text-slate-900">{editingApp ? 'Edit Application' : 'Publish New Application'}</h2>
               <button 
-                onClick={() => { setIsAdding(false); setEditingApp(null); }}
+                onClick={resetForm}
                 className="p-2 hover:bg-slate-50 rounded-full transition-colors"
               >
                 <X className="w-6 h-6 text-slate-400" />
@@ -1378,15 +1531,26 @@ const AdminDashboard = ({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Size</label>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Expiry Date</label>
                     <input 
-                      type="text" 
-                      value={formData.size}
-                      onChange={e => setFormData({...formData, size: e.target.value})}
+                      required
+                      type="date" 
+                      min={new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0]}
+                      value={formData.expiryDate}
+                      onChange={e => setFormData({...formData, expiryDate: e.target.value})}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
-                      placeholder="e.g. 45 MB"
                     />
                   </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Size</label>
+                  <input 
+                    type="text" 
+                    value={formData.size}
+                    onChange={e => setFormData({...formData, size: e.target.value})}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                    placeholder="e.g. 45 MB"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Short Description (Max 80 chars)</label>
@@ -1447,27 +1611,60 @@ const AdminDashboard = ({
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
                     placeholder="YouTube Video ID or URL"
                   />
+                  {formData.promoVideo && (
+                    <div className="mt-4 aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-slate-100 bg-slate-900">
+                      {formData.promoVideo.includes('youtube.com') || formData.promoVideo.includes('youtu.be') ? (
+                        <iframe 
+                          className="w-full h-full"
+                          src={`https://www.youtube.com/embed/${
+                            formData.promoVideo.includes('v=') 
+                              ? formData.promoVideo.split('v=')[1].split('&')[0] 
+                              : formData.promoVideo.split('/').pop()
+                          }`}
+                          title="YouTube video player preview"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold p-4 text-center">
+                          External Video Link: {formData.promoVideo}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Mobile Preview Images (Screenshots)</label>
                   <div className="space-y-2">
                     {formData.screenshots?.map((s, i) => (
-                      <input 
-                        key={i}
-                        type="text" 
-                        value={s}
-                        onChange={e => {
-                          const newScreenshots = [...(formData.screenshots || [])];
-                          newScreenshots[i] = e.target.value;
-                          setFormData({...formData, screenshots: newScreenshots});
-                        }}
-                        className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all text-sm"
-                        placeholder={`Screenshot ${i + 1} URL`}
-                      />
+                      <div key={i} className="flex gap-2">
+                        <input 
+                          type="text" 
+                          value={s}
+                          onChange={e => {
+                            const newScreenshots = [...(formData.screenshots || [])];
+                            newScreenshots[i] = e.target.value;
+                            setFormData({...formData, screenshots: newScreenshots});
+                          }}
+                          className="flex-1 px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all text-sm"
+                          placeholder={`Screenshot ${i + 1} URL`}
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const newScreenshots = (formData.screenshots || []).filter((_, index) => index !== i);
+                            setFormData({...formData, screenshots: newScreenshots});
+                          }}
+                          className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     ))}
                     <button 
                       type="button"
-                      onClick={() => setFormData({...formData, screenshots: [...(formData.screenshots || []), 'https://picsum.photos/seed/new/400/800']})}
+                      onClick={() => setFormData({...formData, screenshots: [...(formData.screenshots || []), `https://picsum.photos/seed/s${(formData.screenshots?.length || 0) + 1}/400/800`]})}
                       className="text-xs font-bold text-aladeen-green hover:underline"
                     >
                       + Add Screenshot
@@ -1570,7 +1767,7 @@ const AdminDashboard = ({
                   </button>
                   <button 
                     type="button"
-                    onClick={() => { setIsAdding(false); setEditingApp(null); }}
+                    onClick={resetForm}
                     className="px-8 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black hover:bg-slate-200 transition-all"
                   >
                     Cancel
@@ -1579,6 +1776,244 @@ const AdminDashboard = ({
               </div>
             </form>
           </motion.div>
+        ) : activeTab === 'clients' ? (
+          isAddingClient ? (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-100"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-xl font-bold text-slate-900">{editingClient ? 'Edit Client' : 'Add New Client'}</h2>
+                <button 
+                  onClick={resetClientForm}
+                  className="p-2 hover:bg-slate-50 rounded-full transition-colors"
+                >
+                  <X className="w-6 h-6 text-slate-400" />
+                </button>
+              </div>
+
+              <form onSubmit={handleClientSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Client Name</label>
+                    <input 
+                      required
+                      type="text" 
+                      value={clientFormData.name}
+                      onChange={e => setClientFormData({...clientFormData, name: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                      placeholder="e.g. Daraz Bangladesh"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">On-board Date</label>
+                    <input 
+                      required
+                      type="date" 
+                      value={clientFormData.onBoardDate}
+                      onChange={e => setClientFormData({...clientFormData, onBoardDate: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Contact Number</label>
+                    <input 
+                      required
+                      type="text" 
+                      value={clientFormData.contactNumber}
+                      onChange={e => setClientFormData({...clientFormData, contactNumber: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                      placeholder="e.g. +8801234567890"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Website URL</label>
+                    <input 
+                      type="text" 
+                      value={clientFormData.website}
+                      onChange={e => setClientFormData({...clientFormData, website: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                      placeholder="https://example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Facebook Page URL</label>
+                    <input 
+                      type="text" 
+                      value={clientFormData.facebook}
+                      onChange={e => setClientFormData({...clientFormData, facebook: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                      placeholder="https://facebook.com/example"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Notes</label>
+                    <textarea 
+                      value={clientFormData.notes}
+                      onChange={e => setClientFormData({...clientFormData, notes: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all min-h-[100px] resize-none"
+                      placeholder="Any additional info..."
+                    />
+                  </div>
+                </div>
+
+                <div className="md:col-span-2 pt-4 flex gap-4">
+                  <button 
+                    type="submit"
+                    className="flex-1 bg-aladeen-green text-white py-4 rounded-2xl font-black shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all flex items-center justify-center gap-2"
+                  >
+                    <Save className="w-5 h-5" />
+                    {editingClient ? 'Update Client' : 'Add Client'}
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={resetClientForm}
+                    className="px-8 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black hover:bg-slate-200 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          ) : (
+            <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/50 border-b border-slate-100">
+                      <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Client Name</th>
+                      <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">On-board Date</th>
+                      <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Website Link</th>
+                      <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Facebook Link</th>
+                      <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Contact Number</th>
+                      <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {clients.map(client => (
+                      <tr key={client.id} className="hover:bg-slate-50/30 transition-colors group">
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-slate-900">{client.name}</div>
+                          {client.notes && <div className="text-[10px] text-slate-400 truncate max-w-[200px]">{client.notes}</div>}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-bold text-slate-600 flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-slate-400" />
+                            {client.onBoardDate}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {client.website ? (
+                            <a href={client.website} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-blue-500 hover:underline flex items-center gap-2">
+                              <Globe className="w-4 h-4" />
+                              Website
+                            </a>
+                          ) : (
+                            <span className="text-xs text-slate-300">N/A</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          {client.facebook ? (
+                            <a href={client.facebook} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-indigo-500 hover:underline flex items-center gap-2">
+                              <Facebook className="w-4 h-4" />
+                              Facebook
+                            </a>
+                          ) : (
+                            <span className="text-xs text-slate-300">N/A</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-bold text-slate-600 flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-slate-400" />
+                            {client.contactNumber}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                              onClick={() => {
+                                setEditingClient(client);
+                                setClientFormData(client);
+                                setIsAddingClient(true);
+                              }}
+                              className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
+                            >
+                              <Edit className="w-5 h-5" />
+                            </button>
+                            <button 
+                              onClick={() => {
+                                toast.custom((t) => (
+                                  <div className="bg-white p-6 rounded-3xl shadow-2xl border border-slate-100 max-w-sm">
+                                    <h3 className="text-lg font-bold text-slate-900 mb-2">Remove Client?</h3>
+                                    <p className="text-sm text-slate-500 mb-6">Are you sure you want to remove <span className="font-bold text-slate-900">{client.name}</span>?</p>
+                                    <div className="flex gap-3">
+                                      <button 
+                                        onClick={() => {
+                                          onDeleteClient(client.id);
+                                          toast.dismiss(t);
+                                        }}
+                                        className="flex-1 bg-red-500 text-white py-2 rounded-xl font-bold hover:bg-red-600 transition-colors"
+                                      >
+                                        Remove
+                                      </button>
+                                      <button 
+                                        onClick={() => toast.dismiss(t)}
+                                        className="flex-1 bg-slate-100 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-200 transition-all"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                ));
+                              }}
+                              className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
+        ) : activeTab === 'analytics' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl">
+              <div className="w-12 h-12 bg-aladeen-green/10 rounded-2xl flex items-center justify-center text-aladeen-green mb-6">
+                <Layout className="w-6 h-6" />
+              </div>
+              <div className="text-3xl font-black text-slate-900 mb-1">{stats.totalApps}</div>
+              <div className="text-xs font-black text-slate-400 uppercase tracking-widest">Total Apps</div>
+            </div>
+            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl">
+              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 mb-6">
+                <Download className="w-6 h-6" />
+              </div>
+              <div className="text-3xl font-black text-slate-900 mb-1">{stats.totalDownloads}</div>
+              <div className="text-xs font-black text-slate-400 uppercase tracking-widest">Total Downloads</div>
+            </div>
+            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl">
+              <div className="w-12 h-12 bg-yellow-50 rounded-2xl flex items-center justify-center text-yellow-500 mb-6">
+                <Star className="w-6 h-6" />
+              </div>
+              <div className="text-3xl font-black text-slate-900 mb-1">{stats.avgRating}</div>
+              <div className="text-xs font-black text-slate-400 uppercase tracking-widest">Avg Rating</div>
+            </div>
+            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl">
+              <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-500 mb-6">
+                <Users className="w-6 h-6" />
+              </div>
+              <div className="text-3xl font-black text-slate-900 mb-1">{clients.length}</div>
+              <div className="text-xs font-black text-slate-400 uppercase tracking-widest">Total Clients</div>
+            </div>
+          </div>
         ) : (
           <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100">
             <div className="overflow-x-auto">
@@ -1640,9 +2075,29 @@ const AdminDashboard = ({
                           </button>
                           <button 
                             onClick={() => {
-                              if (window.confirm(`Are you sure you want to delete ${app.name}?`)) {
-                                onDeleteApp(app.id);
-                              }
+                              toast.custom((t) => (
+                                <div className="bg-white p-6 rounded-3xl shadow-2xl border border-slate-100 max-w-sm">
+                                  <h3 className="text-lg font-bold text-slate-900 mb-2">Delete App?</h3>
+                                  <p className="text-sm text-slate-500 mb-6">Are you sure you want to delete <span className="font-bold text-slate-900">{app.name}</span>? This action cannot be undone.</p>
+                                  <div className="flex gap-3">
+                                    <button 
+                                      onClick={() => {
+                                        onDeleteApp(app.id);
+                                        toast.dismiss(t);
+                                      }}
+                                      className="flex-1 bg-red-500 text-white py-2 rounded-xl font-bold hover:bg-red-600 transition-colors"
+                                    >
+                                      Delete
+                                    </button>
+                                    <button 
+                                      onClick={() => toast.dismiss(t)}
+                                      className="flex-1 bg-slate-100 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ));
                             }}
                             className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
                             title="Delete App"
@@ -1711,6 +2166,32 @@ export default function App() {
     setAllApps(updatedApps);
     localStorage.setItem('aladeen_all_apps', JSON.stringify(updatedApps));
     toast.success('App deleted successfully!');
+  };
+
+  const [allClients, setAllClients] = useState<ClientData[]>(() => {
+    const saved = localStorage.getItem('aladeen_clients');
+    return saved ? JSON.parse(saved) : MOCK_CLIENTS;
+  });
+
+  const handleAddClient = (newClient: ClientData) => {
+    const updated = [newClient, ...allClients];
+    setAllClients(updated);
+    localStorage.setItem('aladeen_clients', JSON.stringify(updated));
+    toast.success('Client added successfully!');
+  };
+
+  const handleUpdateClient = (updatedClient: ClientData) => {
+    const updated = allClients.map(c => c.id === updatedClient.id ? updatedClient : c);
+    setAllClients(updated);
+    localStorage.setItem('aladeen_clients', JSON.stringify(updated));
+    toast.success('Client updated successfully!');
+  };
+
+  const handleDeleteClient = (clientId: string) => {
+    const updated = allClients.filter(c => c.id !== clientId);
+    setAllClients(updated);
+    localStorage.setItem('aladeen_clients', JSON.stringify(updated));
+    toast.success('Client removed successfully!');
   };
   const [selectedApp, setSelectedApp] = useState<AppData | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -1866,6 +2347,10 @@ export default function App() {
         onAddApp={handleAddApp}
         onUpdateApp={handleUpdateApp}
         onDeleteApp={handleDeleteApp}
+        clients={allClients}
+        onAddClient={handleAddClient}
+        onUpdateClient={handleUpdateClient}
+        onDeleteClient={handleDeleteClient}
         onBack={() => setView('home')}
       />
     );
@@ -2264,4 +2749,4 @@ export default function App() {
       <Toaster position="bottom-center" richColors />
     </div>
   );
-}
+};

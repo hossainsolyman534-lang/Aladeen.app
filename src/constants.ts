@@ -28,6 +28,17 @@ export interface AppData {
   isFeatured?: boolean;
   addedAt: string;
   apkUrl?: string;
+  expiryDate?: string; // ISO date string
+}
+
+export interface ClientData {
+  id: string;
+  name: string;
+  onBoardDate: string;
+  website?: string;
+  facebook?: string;
+  contactNumber: string;
+  notes?: string;
 }
 
 export interface CategoryData {
@@ -132,7 +143,8 @@ export const MOCK_APPS: AppData[] = [
     isVerified: true,
     isFeatured: true,
     isTrending: true,
-    addedAt: "2026-03-01"
+    addedAt: "2026-03-01",
+    promoVideo: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
   },
   {
     id: "2",
@@ -279,6 +291,28 @@ export const MOCK_APPS: AppData[] = [
     ],
     reviews_list: MOCK_REVIEWS,
     isVerified: true,
-    addedAt: "2026-03-25"
+    addedAt: "2026-03-25",
+    expiryDate: "2027-03-25"
+  }
+];
+
+export const MOCK_CLIENTS: ClientData[] = [
+  {
+    id: "c1",
+    name: "Daraz Bangladesh",
+    onBoardDate: "2024-01-15",
+    website: "https://daraz.com.bd",
+    facebook: "https://facebook.com/darazbangladesh",
+    contactNumber: "+8801234567890",
+    notes: "Largest e-commerce partner."
+  },
+  {
+    id: "c2",
+    name: "Chaldal Limited",
+    onBoardDate: "2024-02-20",
+    website: "https://chaldal.com",
+    facebook: "https://facebook.com/chaldal",
+    contactNumber: "+8801987654321",
+    notes: "Grocery delivery specialist."
   }
 ];
