@@ -1226,6 +1226,7 @@ const AdminDashboard = ({
   
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientData | null>(null);
+  const [clientSortOrder, setClientSortOrder] = useState<'asc' | 'desc'>('desc');
   const [clientFormData, setClientFormData] = useState<Partial<ClientData>>({
     name: '',
     onBoardDate: new Date().toISOString().split('T')[0],
@@ -1280,6 +1281,14 @@ const AdminDashboard = ({
       avgRating: apps.length > 0 ? (apps.reduce((acc, app) => acc + app.rating, 0) / apps.length).toFixed(1) : '0.0'
     };
   }, [apps]);
+
+  const sortedClients = useMemo(() => {
+    return [...clients].sort((a, b) => {
+      const dateA = new Date(a.onBoardDate).getTime();
+      const dateB = new Date(b.onBoardDate).getTime();
+      return clientSortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    });
+  }, [clients, clientSortOrder]);
 
   const handleApkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1886,7 +1895,15 @@ const AdminDashboard = ({
                   <thead>
                     <tr className="bg-slate-50/50 border-b border-slate-100">
                       <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Client Name</th>
-                      <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">On-board Date</th>
+                      <th 
+                        className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-aladeen-green transition-colors"
+                        onClick={() => setClientSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                      >
+                        <div className="flex items-center gap-2">
+                          On-board Date
+                          <ArrowUpDown className={`w-3 h-3 ${clientSortOrder === 'desc' ? 'text-aladeen-green' : 'text-slate-300'}`} />
+                        </div>
+                      </th>
                       <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Website Link</th>
                       <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Facebook Link</th>
                       <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Contact Number</th>
@@ -1894,7 +1911,7 @@ const AdminDashboard = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {clients.map(client => (
+                    {sortedClients.map(client => (
                       <tr key={client.id} className="hover:bg-slate-50/30 transition-colors group">
                         <td className="px-6 py-4">
                           <div className="font-bold text-slate-900">{client.name}</div>
