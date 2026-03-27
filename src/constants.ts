@@ -25,6 +25,7 @@ export interface AppData {
   isTrending?: boolean;
   isFeatured?: boolean;
   addedAt: string;
+  apkUrl?: string;
 }
 
 export interface CategoryData {

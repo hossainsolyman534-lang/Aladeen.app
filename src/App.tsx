@@ -36,7 +36,8 @@ import {
   Layout,
   FileText,
   Image as ImageIcon,
-  Check
+  Check,
+  Upload
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MOCK_APPS, AppData, CATEGORIES, MOCK_REVIEWS, CategoryData } from './constants';
@@ -307,7 +308,14 @@ const AppDetail = ({
             <img src={app.icon} alt={app.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
           </div>
           <div className="flex flex-col justify-center">
-            <h1 className="text-2xl font-extrabold text-slate-900 leading-tight mb-1">{app.name}</h1>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-2xl font-extrabold text-slate-900 leading-tight">{app.name}</h1>
+              {app.isVerified && (
+                <div className="bg-aladeen-green/10 p-1 rounded-full" title="Verified APK">
+                  <CheckCircle2 className="w-4 h-4 text-aladeen-green" />
+                </div>
+              )}
+            </div>
             <p className="text-aladeen-green font-semibold text-sm mb-2">{app.developer}</p>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg">
@@ -907,6 +915,8 @@ const AdminDashboard = ({
 }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [editingApp, setEditingApp] = useState<AppData | null>(null);
+  const [uploadingApk, setUploadingApk] = useState(false);
+  const [apkProgress, setApkProgress] = useState(0);
   const [formData, setFormData] = useState<Partial<AppData>>({
     name: '',
     developer: '',
@@ -923,8 +933,36 @@ const AdminDashboard = ({
     isFeatured: false,
     isTrending: false,
     addedAt: new Date().toISOString(),
-    reviews_list: []
+    reviews_list: [],
+    apkUrl: ''
   });
+
+  const handleApkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.apk')) {
+      toast.error('Please select a valid APK file');
+      return;
+    }
+
+    setUploadingApk(true);
+    setApkProgress(0);
+
+    // Simulate upload
+    let p = 0;
+    const interval = setInterval(() => {
+      p += Math.random() * 20;
+      if (p >= 100) {
+        p = 100;
+        clearInterval(interval);
+        setUploadingApk(false);
+        setFormData(prev => ({ ...prev, apkUrl: `https://aladeen.app/downloads/${file.name}`, size: `${(file.size / (1024 * 1024)).toFixed(1)} MB` }));
+        toast.success('APK uploaded successfully!');
+      }
+      setApkProgress(p);
+    }, 300);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -957,7 +995,8 @@ const AdminDashboard = ({
       isFeatured: false,
       isTrending: false,
       addedAt: new Date().toISOString(),
-      reviews_list: []
+      reviews_list: [],
+      apkUrl: ''
     });
   };
 
@@ -1117,6 +1156,59 @@ const AdminDashboard = ({
                     className="w-5 h-5 accent-aladeen-green"
                   />
                   <label htmlFor="isTrending" className="text-sm font-bold text-slate-700 cursor-pointer">Trending Now</label>
+                </div>
+
+                <div className="p-6 bg-aladeen-green/5 rounded-[2rem] border border-aladeen-green/10">
+                  <label className="block text-xs font-black text-aladeen-green uppercase tracking-widest mb-4">APK File</label>
+                  
+                  {formData.apkUrl ? (
+                    <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-aladeen-green/20 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-aladeen-green/10 rounded-xl flex items-center justify-center text-aladeen-green">
+                          <Check className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-slate-900 truncate max-w-[150px]">
+                            {formData.apkUrl.split('/').pop()}
+                          </div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{formData.size}</div>
+                        </div>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, apkUrl: '' }))}
+                        className="text-xs font-bold text-red-500 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : uploadingApk ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black text-aladeen-green uppercase tracking-widest animate-pulse">Uploading APK...</span>
+                        <span className="text-xs font-black text-aladeen-green">{Math.floor(apkProgress)}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-aladeen-green/10 rounded-full overflow-hidden">
+                        <motion.div 
+                          className="h-full bg-aladeen-green"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${apkProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-aladeen-green/30 rounded-[2rem] cursor-pointer hover:bg-aladeen-green/5 transition-all group">
+                      <Upload className="w-8 h-8 text-aladeen-green mb-3 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm font-bold text-slate-700">Select APK File</span>
+                      <span className="text-[10px] text-slate-400 mt-1">Maximum size: 100MB</span>
+                      <input 
+                        type="file" 
+                        accept=".apk"
+                        onChange={handleApkUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
                 </div>
                 
                 <div className="pt-4 flex gap-4">
@@ -1296,6 +1388,13 @@ export default function App() {
   const startDownload = (appId: string) => {
     if (downloadingApps[appId] !== undefined || installedApps.includes(appId)) return;
     
+    const app = allApps.find(a => a.id === appId);
+    if (app?.apkUrl) {
+      toast.info(`Downloading APK: ${app.name}...`);
+    } else {
+      toast.info(`Installing ${app?.name || 'app'}...`);
+    }
+
     setDownloadingApps(prev => ({ ...prev, [appId]: 0 }));
     
     let p = 0;
