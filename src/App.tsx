@@ -28,7 +28,15 @@ import {
   Trash2,
   ExternalLink,
   User,
-  Heart
+  Heart,
+  Settings,
+  PlusCircle,
+  Edit,
+  Save,
+  Layout,
+  FileText,
+  Image as ImageIcon,
+  Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MOCK_APPS, AppData, CATEGORIES, MOCK_REVIEWS, CategoryData } from './constants';
@@ -170,6 +178,7 @@ const AppDetail = ({
   userReview,
   onRate,
   onAppClick,
+  apps,
   downloadProgress,
   isWishlisted,
   onToggleWishlist
@@ -182,6 +191,7 @@ const AppDetail = ({
   userReview: { rating: number; comment: string } | null;
   onRate: (rating: number, comment: string) => void;
   onAppClick: (app: AppData) => void;
+  apps: AppData[];
   downloadProgress?: number;
   isWishlisted: boolean;
   onToggleWishlist: () => void;
@@ -602,7 +612,7 @@ const AppDetail = ({
             <h2 className="text-lg font-bold text-slate-900">Related Apps</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-            {MOCK_APPS
+            {apps
               .filter(a => a.id !== app.id && (a.category === app.category || a.developer === app.developer))
               .slice(0, 4)
               .map(relatedApp => (
@@ -696,16 +706,18 @@ const CategoryDetail = ({
   category, 
   onBack, 
   onAppClick,
+  apps,
   downloadingApps = {}
 }: { 
   category: CategoryData; 
   onBack: () => void; 
   onAppClick: (app: AppData) => void;
+  apps: AppData[];
   downloadingApps?: Record<string, number>;
 }) => {
   const relatedApps = useMemo(() => 
-    MOCK_APPS.filter(app => app.category === category.name), 
-    [category.name]
+    apps.filter(app => app.category === category.name), 
+    [category.name, apps]
   );
 
   return (
@@ -772,12 +784,14 @@ const UserProfile = ({
   wishlistApps,
   onAppClick, 
   onBack,
+  onAdminClick,
   downloadingApps = {}
 }: { 
   installedApps: AppData[]; 
   wishlistApps: AppData[];
   onAppClick: (app: AppData) => void;
   onBack: () => void;
+  onAdminClick: () => void;
   downloadingApps?: Record<string, number>;
 }) => {
   return (
@@ -787,13 +801,23 @@ const UserProfile = ({
       exit={{ opacity: 0, x: -20 }}
       className="px-6 py-8"
     >
-      <button 
-        onClick={onBack}
-        className="flex items-center gap-2 text-slate-400 hover:text-aladeen-green transition-colors mb-8 group"
-      >
-        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-        <span className="font-bold">Back to Home</span>
-      </button>
+      <div className="flex items-center justify-between mb-8">
+        <button 
+          onClick={onBack}
+          className="flex items-center gap-2 text-slate-400 hover:text-aladeen-green transition-colors group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-bold">Back to Home</span>
+        </button>
+        
+        <button 
+          onClick={onAdminClick}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
+        >
+          <Settings className="w-4 h-4" />
+          Admin Panel
+        </button>
+      </div>
 
       <div className="bg-slate-50 rounded-[2.5rem] p-8 mb-12 flex flex-col md:flex-row items-center gap-8 border border-slate-100">
         <div className="w-24 h-24 rounded-full bg-aladeen-green/10 flex items-center justify-center text-aladeen-green">
@@ -868,10 +892,366 @@ const UserProfile = ({
   );
 };
 
+const AdminDashboard = ({ 
+  apps, 
+  onAddApp, 
+  onUpdateApp, 
+  onDeleteApp, 
+  onBack 
+}: { 
+  apps: AppData[]; 
+  onAddApp: (app: AppData) => void; 
+  onUpdateApp: (app: AppData) => void; 
+  onDeleteApp: (appId: string) => void; 
+  onBack: () => void; 
+}) => {
+  const [isAdding, setIsAdding] = useState(false);
+  const [editingApp, setEditingApp] = useState<AppData | null>(null);
+  const [formData, setFormData] = useState<Partial<AppData>>({
+    name: '',
+    developer: '',
+    category: CATEGORIES[0].name,
+    rating: 4.5,
+    reviews: '0',
+    downloads: '0',
+    size: '0 MB',
+    icon: 'https://picsum.photos/seed/app/200/200',
+    banner: 'https://picsum.photos/seed/banner/800/400',
+    description: '',
+    screenshots: ['https://picsum.photos/seed/s1/400/800', 'https://picsum.photos/seed/s2/400/800'],
+    isVerified: true,
+    isFeatured: false,
+    isTrending: false,
+    addedAt: new Date().toISOString(),
+    reviews_list: []
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingApp) {
+      onUpdateApp({ ...editingApp, ...formData } as AppData);
+      setEditingApp(null);
+    } else {
+      const newApp: AppData = {
+        ...formData,
+        id: `app-${Date.now()}`,
+        addedAt: new Date().toISOString(),
+        reviews_list: []
+      } as AppData;
+      onAddApp(newApp);
+      setIsAdding(false);
+    }
+    setFormData({
+      name: '',
+      developer: '',
+      category: CATEGORIES[0].name,
+      rating: 4.5,
+      reviews: '0',
+      downloads: '0',
+      size: '0 MB',
+      icon: 'https://picsum.photos/seed/app/200/200',
+      banner: 'https://picsum.photos/seed/banner/800/400',
+      description: '',
+      screenshots: ['https://picsum.photos/seed/s1/400/800', 'https://picsum.photos/seed/s2/400/800'],
+      isVerified: true,
+      isFeatured: false,
+      isTrending: false,
+      addedAt: new Date().toISOString(),
+      reviews_list: []
+    });
+  };
+
+  const handleEdit = (app: AppData) => {
+    setEditingApp(app);
+    setFormData(app);
+    setIsAdding(true);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-5xl mx-auto px-6 py-10">
+        <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center gap-4">
+            <button onClick={onBack} className="p-2 hover:bg-white rounded-full transition-colors shadow-sm">
+              <ArrowLeft className="w-6 h-6 text-slate-700" />
+            </button>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Admin <span className="text-aladeen-green">Dashboard</span></h1>
+          </div>
+          {!isAdding && (
+            <button 
+              onClick={() => setIsAdding(true)}
+              className="flex items-center gap-2 bg-aladeen-green text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all active:scale-95"
+            >
+              <PlusCircle className="w-5 h-5" />
+              Publish New APK
+            </button>
+          )}
+        </div>
+
+        {isAdding ? (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-100"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-xl font-bold text-slate-900">{editingApp ? 'Edit Application' : 'Publish New Application'}</h2>
+              <button 
+                onClick={() => { setIsAdding(false); setEditingApp(null); }}
+                className="p-2 hover:bg-slate-50 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6 text-slate-400" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">App Name</label>
+                  <input 
+                    required
+                    type="text" 
+                    value={formData.name}
+                    onChange={e => setFormData({...formData, name: e.target.value})}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                    placeholder="e.g. Daraz Shopping"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Developer</label>
+                  <input 
+                    required
+                    type="text" 
+                    value={formData.developer}
+                    onChange={e => setFormData({...formData, developer: e.target.value})}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                    placeholder="e.g. Daraz Mobile"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Category</label>
+                    <select 
+                      value={formData.category}
+                      onChange={e => setFormData({...formData, category: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                    >
+                      {CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Size</label>
+                    <input 
+                      type="text" 
+                      value={formData.size}
+                      onChange={e => setFormData({...formData, size: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                      placeholder="e.g. 45 MB"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Description</label>
+                  <textarea 
+                    required
+                    value={formData.description}
+                    onChange={e => setFormData({...formData, description: e.target.value})}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all min-h-[120px] resize-none"
+                    placeholder="Tell users about this app..."
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Icon URL</label>
+                  <div className="flex gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 border border-slate-200">
+                      <img src={formData.icon} alt="preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    </div>
+                    <input 
+                      type="text" 
+                      value={formData.icon}
+                      onChange={e => setFormData({...formData, icon: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Banner URL</label>
+                  <input 
+                    type="text" 
+                    value={formData.banner}
+                    onChange={e => setFormData({...formData, banner: e.target.value})}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                    <input 
+                      type="checkbox" 
+                      id="isVerified"
+                      checked={formData.isVerified}
+                      onChange={e => setFormData({...formData, isVerified: e.target.checked})}
+                      className="w-5 h-5 accent-aladeen-green"
+                    />
+                    <label htmlFor="isVerified" className="text-sm font-bold text-slate-700 cursor-pointer">Verified App</label>
+                  </div>
+                  <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                    <input 
+                      type="checkbox" 
+                      id="isFeatured"
+                      checked={formData.isFeatured}
+                      onChange={e => setFormData({...formData, isFeatured: e.target.checked})}
+                      className="w-5 h-5 accent-aladeen-green"
+                    />
+                    <label htmlFor="isFeatured" className="text-sm font-bold text-slate-700 cursor-pointer">Featured</label>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <input 
+                    type="checkbox" 
+                    id="isTrending"
+                    checked={formData.isTrending}
+                    onChange={e => setFormData({...formData, isTrending: e.target.checked})}
+                    className="w-5 h-5 accent-aladeen-green"
+                  />
+                  <label htmlFor="isTrending" className="text-sm font-bold text-slate-700 cursor-pointer">Trending Now</label>
+                </div>
+                
+                <div className="pt-4 flex gap-4">
+                  <button 
+                    type="submit"
+                    className="flex-1 bg-aladeen-green text-white py-4 rounded-2xl font-black shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all flex items-center justify-center gap-2"
+                  >
+                    <Save className="w-5 h-5" />
+                    {editingApp ? 'Update App' : 'Publish App'}
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => { setIsAdding(false); setEditingApp(null); }}
+                    className="px-8 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black hover:bg-slate-200 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </form>
+          </motion.div>
+        ) : (
+          <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 border-b border-slate-100">
+                    <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">App</th>
+                    <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Category</th>
+                    <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Stats</th>
+                    <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Status</th>
+                    <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {apps.map(app => (
+                    <tr key={app.id} className="hover:bg-slate-50/30 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <img src={app.icon} alt="" className="w-12 h-12 rounded-xl object-cover shadow-sm" referrerPolicy="no-referrer" />
+                          <div>
+                            <div className="font-bold text-slate-900">{app.name}</div>
+                            <div className="text-xs text-slate-400 font-medium">{app.developer}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 rounded-full text-[10px] font-black text-slate-600 uppercase tracking-wider">
+                          <Layout className="w-3 h-3" />
+                          {app.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
+                            <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                            {app.rating}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            <Download className="w-3 h-3" />
+                            {app.downloads}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-2">
+                          {app.isVerified && <span className="px-2 py-0.5 bg-green-50 text-green-600 text-[9px] font-black uppercase tracking-widest rounded-md border border-green-100">Verified</span>}
+                          {app.isFeatured && <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-black uppercase tracking-widest rounded-md border border-blue-100">Featured</span>}
+                          {app.isTrending && <span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[9px] font-black uppercase tracking-widest rounded-md border border-orange-100">Trending</span>}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => handleEdit(app)}
+                            className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
+                            title="Edit App"
+                          >
+                            <Edit className="w-5 h-5" />
+                          </button>
+                          <button 
+                            onClick={() => {
+                              if (window.confirm(`Are you sure you want to delete ${app.name}?`)) {
+                                onDeleteApp(app.id);
+                              }
+                            }}
+                            className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+                            title="Delete App"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // --- Main App ---
 
 export default function App() {
-  const [view, setView] = useState<'home' | 'listing' | 'profile'>('home');
+  const [allApps, setAllApps] = useState<AppData[]>(() => {
+    const saved = localStorage.getItem('aladeen_all_apps');
+    return saved ? JSON.parse(saved) : MOCK_APPS;
+  });
+
+  const [view, setView] = useState<'home' | 'listing' | 'profile' | 'admin'>('home');
+
+  const handleAddApp = (newApp: AppData) => {
+    const updatedApps = [newApp, ...allApps];
+    setAllApps(updatedApps);
+    localStorage.setItem('aladeen_all_apps', JSON.stringify(updatedApps));
+    toast.success('App published successfully!');
+  };
+
+  const handleUpdateApp = (updatedApp: AppData) => {
+    const updatedApps = allApps.map(app => app.id === updatedApp.id ? updatedApp : app);
+    setAllApps(updatedApps);
+    localStorage.setItem('aladeen_all_apps', JSON.stringify(updatedApps));
+    toast.success('App updated successfully!');
+  };
+
+  const handleDeleteApp = (appId: string) => {
+    const updatedApps = allApps.filter(app => app.id !== appId);
+    setAllApps(updatedApps);
+    localStorage.setItem('aladeen_all_apps', JSON.stringify(updatedApps));
+    toast.success('App deleted successfully!');
+  };
   const [selectedApp, setSelectedApp] = useState<AppData | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedCategoryDetail, setSelectedCategoryDetail] = useState<CategoryData | null>(null);
@@ -960,7 +1340,7 @@ export default function App() {
   };
 
   const filteredApps = useMemo(() => {
-    let apps = [...MOCK_APPS];
+    let apps = [...allApps];
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       apps = apps.filter(app => 
@@ -989,30 +1369,40 @@ export default function App() {
     }
     
     return apps;
-  }, [searchQuery, selectedCategory, sortBy]);
+  }, [searchQuery, selectedCategory, sortBy, allApps]);
 
   const suggestions = useMemo(() => {
     if (!searchQuery.trim() || searchQuery.length < 2) return [];
     const query = searchQuery.toLowerCase();
-    return MOCK_APPS
+    return allApps
       .filter(app => 
         app.name.toLowerCase().includes(query) || 
         app.developer.toLowerCase().includes(query)
       )
       .slice(0, 5);
-  }, [searchQuery]);
+  }, [searchQuery, allApps]);
 
-  const featuredApps = useMemo(() => MOCK_APPS.filter(a => a.isFeatured), []);
-  const trendingApps = useMemo(() => MOCK_APPS.filter(a => a.isTrending), []);
-  const newlyAddedApps = useMemo(() => [...MOCK_APPS].sort((a, b) => b.addedAt.localeCompare(a.addedAt)).slice(0, 4), []);
+  const featuredApps = useMemo(() => allApps.filter(a => a.isFeatured), [allApps]);
+  const trendingApps = useMemo(() => allApps.filter(a => a.isTrending), [allApps]);
+  const newlyAddedApps = useMemo(() => [...allApps].sort((a, b) => b.addedAt.localeCompare(a.addedAt)).slice(0, 4), [allApps]);
   
   const recommendedApps = useMemo(() => {
-    // Simple logic: Mix of featured and trending, or just a random selection for now
-    // In a real app, this would use download history from localStorage
-    return [...MOCK_APPS]
+    return [...allApps]
       .sort(() => Math.random() - 0.5)
       .slice(0, 4);
-  }, []);
+  }, [allApps]);
+
+  if (view === 'admin') {
+    return (
+      <AdminDashboard 
+        apps={allApps}
+        onAddApp={handleAddApp}
+        onUpdateApp={handleUpdateApp}
+        onDeleteApp={handleDeleteApp}
+        onBack={() => setView('home')}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -1043,10 +1433,11 @@ export default function App() {
       <main className="max-w-4xl mx-auto pb-20">
         {view === 'profile' ? (
           <UserProfile 
-            installedApps={MOCK_APPS.filter(app => installedApps.includes(app.id))}
-            wishlistApps={MOCK_APPS.filter(app => wishlist.includes(app.id))}
+            installedApps={allApps.filter(app => installedApps.includes(app.id))}
+            wishlistApps={allApps.filter(app => wishlist.includes(app.id))}
             onAppClick={setSelectedApp}
             onBack={() => setView('home')}
+            onAdminClick={() => setView('admin')}
             downloadingApps={downloadingApps}
           />
         ) : view === 'home' ? (
@@ -1334,6 +1725,7 @@ export default function App() {
             app={selectedApp} 
             onBack={() => setSelectedApp(null)} 
             onAppClick={setSelectedApp}
+            apps={allApps}
             isInstalled={installedApps.includes(selectedApp.id)}
             onInstall={() => startDownload(selectedApp.id)}
             onUninstall={() => handleUninstall(selectedApp.id)}
@@ -1352,6 +1744,7 @@ export default function App() {
           <CategoryDetail 
             category={selectedCategoryDetail}
             onBack={() => setSelectedCategoryDetail(null)}
+            apps={allApps}
             onAppClick={(app) => {
               setSelectedCategoryDetail(null);
               setSelectedApp(app);
