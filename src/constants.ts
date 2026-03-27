@@ -17,9 +17,11 @@ export interface AppData {
   downloads: string;
   category: string;
   icon: string;
-  banner: string;
-  description: string;
-  screenshots: string[];
+  banner: string; // Feature Graphic (1024x500)
+  shortDescription: string; // Max 80 chars
+  description: string; // Full Description
+  screenshots: string[]; // Mobile preview images
+  promoVideo?: string; // Optional Promo video
   reviews_list: AppReview[];
   isVerified: boolean;
   isTrending?: boolean;
@@ -37,46 +39,46 @@ export interface CategoryData {
 
 export const CATEGORIES: CategoryData[] = [
   {
+    name: "Education",
+    description: "Learn new skills and expand your knowledge with top educational apps.",
+    icon: "GraduationCap",
+    banner: "https://picsum.photos/seed/edu_banner/1200/400"
+  },
+  {
+    name: "Business",
+    description: "Tools to help you manage your business and stay productive.",
+    icon: "Briefcase",
+    banner: "https://picsum.photos/seed/biz_banner/1200/400"
+  },
+  {
+    name: "Game",
+    description: "The best mobile games for your entertainment.",
+    icon: "Gamepad2",
+    banner: "https://picsum.photos/seed/game_banner/1200/400"
+  },
+  {
     name: "Marketplace",
-    description: "The biggest online marketplaces in Bangladesh. Buy and sell anything from electronics to fashion.",
+    description: "The biggest online marketplaces in Bangladesh. Buy and sell anything.",
     icon: "ShoppingBag",
     banner: "https://picsum.photos/seed/marketplace_banner/1200/400"
   },
   {
     name: "Grocery",
-    description: "Fresh groceries and daily essentials delivered to your doorstep. Save time and shop from home.",
+    description: "Fresh groceries and daily essentials delivered to your doorstep.",
     icon: "Utensils",
     banner: "https://picsum.photos/seed/grocery_banner/1200/400"
   },
   {
     name: "Fashion",
-    description: "Stay trendy with the latest fashion collections from top Bangladeshi brands and designers.",
+    description: "Stay trendy with the latest fashion collections from top Bangladeshi brands.",
     icon: "Shirt",
     banner: "https://picsum.photos/seed/fashion_banner/1200/400"
   },
   {
     name: "Electronics",
-    description: "Discover the best deals on mobile phones, laptops, and home appliances from trusted sellers.",
+    description: "Discover the best deals on mobile phones, laptops, and home appliances.",
     icon: "Smartphone",
     banner: "https://picsum.photos/seed/electronics_banner/1200/400"
-  },
-  {
-    name: "Pharmacy",
-    description: "Order medicines and healthcare products safely from verified online pharmacies.",
-    icon: "ShieldCheck",
-    banner: "https://picsum.photos/seed/pharmacy_banner/1200/400"
-  },
-  {
-    name: "Food Delivery",
-    description: "Hungry? Order your favorite meals from local restaurants and get them delivered fast.",
-    icon: "Zap",
-    banner: "https://picsum.photos/seed/food_banner/1200/400"
-  },
-  {
-    name: "Lifestyle",
-    description: "Everything you need for your home, hobbies, and personal care in one place.",
-    icon: "Sparkles",
-    banner: "https://picsum.photos/seed/lifestyle_banner/1200/400"
   }
 ];
 
@@ -120,6 +122,7 @@ export const MOCK_APPS: AppData[] = [
     icon: "https://picsum.photos/seed/daraz/200/200",
     banner: "https://picsum.photos/seed/darazbanner/800/400",
     description: "Daraz is the leading online marketplace in South Asia, empowering tens of thousands of sellers to connect with millions of customers.",
+    shortDescription: "Leading online marketplace in South Asia.",
     screenshots: [
       "https://picsum.photos/seed/ds1/400/800",
       "https://picsum.photos/seed/ds2/400/800",
@@ -143,6 +146,7 @@ export const MOCK_APPS: AppData[] = [
     icon: "https://picsum.photos/seed/chaldal/200/200",
     banner: "https://picsum.photos/seed/chaldalbanner/800/400",
     description: "Save time and money! Chaldal is the best online grocery shop in Bangladesh. Order fresh fruits, vegetables, and daily essentials.",
+    shortDescription: "Best online grocery shop in Bangladesh.",
     screenshots: [
       "https://picsum.photos/seed/cs1/400/800",
       "https://picsum.photos/seed/cs2/400/800"
@@ -164,6 +168,7 @@ export const MOCK_APPS: AppData[] = [
     icon: "https://picsum.photos/seed/foodpanda/200/200",
     banner: "https://picsum.photos/seed/fpbanner/800/400",
     description: "Hungry? Get the food you want, from the restaurants you love, delivered at panda speed.",
+    shortDescription: "Get the food you want, delivered fast.",
     screenshots: [
       "https://picsum.photos/seed/fs1/400/800",
       "https://picsum.photos/seed/fs2/400/800"
@@ -185,6 +190,7 @@ export const MOCK_APPS: AppData[] = [
     icon: "https://picsum.photos/seed/pickaboo/200/200",
     banner: "https://picsum.photos/seed/pbbanner/800/400",
     description: "Pickaboo is the most trusted online shopping site in Bangladesh for mobile phones, electronics, and gadgets.",
+    shortDescription: "Most trusted online shopping site in BD.",
     screenshots: [
       "https://picsum.photos/seed/ps1/400/800",
       "https://picsum.photos/seed/ps2/400/800"
@@ -205,6 +211,7 @@ export const MOCK_APPS: AppData[] = [
     icon: "https://picsum.photos/seed/shwapno/200/200",
     banner: "https://picsum.photos/seed/swbanner/800/400",
     description: "Shop from Shwapno, the largest retail chain in Bangladesh. Get fresh groceries and household items delivered to your door.",
+    shortDescription: "Largest retail chain in Bangladesh.",
     screenshots: [
       "https://picsum.photos/seed/ss1/400/800"
     ],
@@ -224,6 +231,7 @@ export const MOCK_APPS: AppData[] = [
     icon: "https://picsum.photos/seed/arogga/200/200",
     banner: "https://picsum.photos/seed/agbanner/800/400",
     description: "Arogga is the first and largest online pharmacy in Bangladesh. Order medicine and healthcare products easily.",
+    shortDescription: "First and largest online pharmacy in BD.",
     screenshots: [
       "https://picsum.photos/seed/as1/400/800"
     ],
@@ -244,6 +252,7 @@ export const MOCK_APPS: AppData[] = [
     icon: "https://picsum.photos/seed/rokomari/200/200",
     banner: "https://picsum.photos/seed/rkbanner/800/400",
     description: "Rokomari.com is the largest online bookstore in Bangladesh. Buy books, electronics, and stationery online.",
+    shortDescription: "Largest online bookstore in Bangladesh.",
     screenshots: [
       "https://picsum.photos/seed/rs1/400/800"
     ],
@@ -264,6 +273,7 @@ export const MOCK_APPS: AppData[] = [
     icon: "https://picsum.photos/seed/bikroy/200/200",
     banner: "https://picsum.photos/seed/bkbanner/800/400",
     description: "Bikroy is the largest marketplace in Bangladesh. Buy and sell everything from cars to mobile phones.",
+    shortDescription: "Largest marketplace in Bangladesh.",
     screenshots: [
       "https://picsum.photos/seed/bs1/400/800"
     ],

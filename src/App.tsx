@@ -37,12 +37,186 @@ import {
   FileText,
   Image as ImageIcon,
   Check,
-  Upload
+  Upload,
+  GraduationCap,
+  Briefcase,
+  Gamepad2,
+  BarChart3,
+  Users,
+  Activity,
+  Phone,
+  Lock,
+  LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MOCK_APPS, AppData, CATEGORIES, MOCK_REVIEWS, CategoryData } from './constants';
 
 // --- Components ---
+
+const AuthModal = ({ 
+  isOpen, 
+  onClose, 
+  onLogin 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onLogin: (user: any) => void 
+}) => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    password: ''
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Admin Login Check
+    if (isLogin && formData.email === 'hossainsolyman534@gmail.com' && formData.password === '87654321') {
+      const adminUser = {
+        name: 'Admin',
+        email: 'hossainsolyman534@gmail.com',
+        role: 'admin'
+      };
+      onLogin(adminUser);
+      toast.success('Welcome back, Admin!');
+      onClose();
+      return;
+    }
+
+    if (isLogin) {
+      // Regular User Login (Simulated)
+      if (!formData.phone || !formData.password) {
+        toast.error('Please fill in all fields');
+        return;
+      }
+      const user = {
+        name: 'User',
+        phone: formData.phone,
+        role: 'user'
+      };
+      onLogin(user);
+      toast.success('Logged in successfully!');
+    } else {
+      // Regular User Signup (Simulated)
+      if (!formData.name || !formData.phone || !formData.password) {
+        toast.error('Please fill in all fields');
+        return;
+      }
+      const user = {
+        name: formData.name,
+        phone: formData.phone,
+        role: 'user'
+      };
+      onLogin(user);
+      toast.success('Account created successfully!');
+    }
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl"
+      >
+        <div className="p-8">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+              {isLogin ? 'Welcome Back' : 'Create Account'}
+            </h2>
+            <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full transition-colors">
+              <X className="w-6 h-6 text-slate-400" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
+              <div>
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Full Name</label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                  <input 
+                    type="text" 
+                    value={formData.name}
+                    onChange={e => setFormData({...formData, name: e.target.value})}
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                    placeholder="Enter your name"
+                  />
+                </div>
+              </div>
+            )}
+
+            {isLogin && (
+              <div>
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Email (for Admin)</label>
+                <div className="relative">
+                  <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                  <input 
+                    type="email" 
+                    value={formData.email}
+                    onChange={e => setFormData({...formData, email: e.target.value})}
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                    placeholder="admin@example.com"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Mobile Number</label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                <input 
+                  type="tel" 
+                  value={formData.phone}
+                  onChange={e => setFormData({...formData, phone: e.target.value})}
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                  placeholder="01XXXXXXXXX"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                <input 
+                  type="password" 
+                  value={formData.password}
+                  onChange={e => setFormData({...formData, password: e.target.value})}
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+
+            <button 
+              type="submit"
+              className="w-full py-4 bg-aladeen-green text-white rounded-2xl font-bold text-lg shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all active:scale-[0.98] mt-4"
+            >
+              {isLogin ? 'Login' : 'Sign Up'}
+            </button>
+          </form>
+
+          <div className="mt-8 text-center">
+            <button 
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-sm font-bold text-slate-500 hover:text-aladeen-green transition-colors"
+            >
+              {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login"}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 const HighlightedText = ({ text, highlight }: { text: string; highlight: string }) => {
   if (!highlight.trim()) return <>{text}</>;
@@ -94,9 +268,14 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
       <h3 className={`font-bold text-slate-900 truncate mb-0.5 ${variant === 'compact' ? 'text-xs' : 'text-sm'}`}>
         <HighlightedText text={app.name} highlight={highlight} />
       </h3>
-      <p className="text-[10px] font-medium text-slate-400 truncate mb-2 uppercase tracking-wider">
+      <p className="text-[10px] font-medium text-slate-400 truncate mb-1 uppercase tracking-wider">
         <HighlightedText text={app.developer} highlight={highlight} />
       </p>
+      {variant !== 'compact' && (
+        <p className="text-[10px] text-slate-500 line-clamp-2 mb-2 leading-tight min-h-[2.5em]">
+          {app.shortDescription}
+        </p>
+      )}
       
       {downloadProgress !== undefined ? (
         <motion.div 
@@ -140,6 +319,9 @@ const CategoryIcon = ({ icon }: { icon: string }) => {
     case 'Zap': return <Zap className="w-6 h-6" />;
     case 'Sparkles': return <Sparkles className="w-6 h-6" />;
     case 'Home': return <HomeIcon className="w-6 h-6" />;
+    case 'GraduationCap': return <GraduationCap className="w-6 h-6" />;
+    case 'Briefcase': return <Briefcase className="w-6 h-6" />;
+    case 'Gamepad2': return <Gamepad2 className="w-6 h-6" />;
     default: return <ShoppingBag className="w-6 h-6" />;
   }
 };
@@ -316,7 +498,8 @@ const AppDetail = ({
                 </div>
               )}
             </div>
-            <p className="text-aladeen-green font-semibold text-sm mb-2">{app.developer}</p>
+            <p className="text-aladeen-green font-semibold text-sm mb-1">{app.developer}</p>
+            <p className="text-slate-500 text-xs mb-3 font-medium leading-relaxed">{app.shortDescription}</p>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg">
                 <span className="text-xs font-bold text-slate-700">{app.rating}</span>
@@ -789,42 +972,85 @@ const CategoryDetail = ({
 
 const UserProfile = ({ 
   installedApps, 
-  wishlistApps,
+  wishlistApps, 
   onAppClick, 
   onBack,
   onAdminClick,
-  downloadingApps = {}
+  downloadingApps = {},
+  currentUser,
+  onLogout,
+  onLoginClick
 }: { 
   installedApps: AppData[]; 
-  wishlistApps: AppData[];
-  onAppClick: (app: AppData) => void;
+  wishlistApps: AppData[]; 
+  onAppClick: (app: AppData) => void; 
   onBack: () => void;
   onAdminClick: () => void;
   downloadingApps?: Record<string, number>;
+  currentUser: any;
+  onLogout: () => void;
+  onLoginClick: () => void;
 }) => {
   return (
     <motion.div 
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="px-6 py-8"
+      className="px-6 py-10"
     >
-      <div className="flex items-center justify-between mb-8">
-        <button 
-          onClick={onBack}
-          className="flex items-center gap-2 text-slate-400 hover:text-aladeen-green transition-colors group"
-        >
-          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-          <span className="font-bold">Back to Home</span>
-        </button>
-        
-        <button 
-          onClick={onAdminClick}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
-        >
-          <Settings className="w-4 h-4" />
-          Admin Panel
-        </button>
+      <div className="flex items-center justify-between mb-10">
+        <div className="flex items-center gap-4">
+          <button onClick={onBack} className="p-2 hover:bg-slate-50 rounded-full transition-colors">
+            <ArrowLeft className="w-6 h-6 text-slate-700" />
+          </button>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">User <span className="text-aladeen-green">Profile</span></h1>
+        </div>
+        {currentUser && (
+          <button 
+            onClick={onLogout}
+            className="flex items-center gap-2 text-red-500 font-bold text-sm hover:bg-red-50 px-4 py-2 rounded-xl transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
+        )}
+      </div>
+
+      <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-100 mb-10">
+        <div className="flex items-center gap-6">
+          <div className="w-24 h-24 rounded-full bg-aladeen-green/10 flex items-center justify-center text-aladeen-green border-4 border-white shadow-lg">
+            <User className="w-12 h-12" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black text-slate-900">{currentUser ? currentUser.name : 'Guest User'}</h2>
+            <p className="text-slate-400 font-bold text-sm uppercase tracking-widest mt-1">
+              {currentUser ? (currentUser.role === 'admin' ? 'Administrator' : 'Regular User') : 'Not Logged In'}
+            </p>
+            {currentUser?.phone && <p className="text-slate-500 text-sm mt-1">{currentUser.phone}</p>}
+            {currentUser?.email && <p className="text-slate-500 text-sm mt-1">{currentUser.email}</p>}
+          </div>
+        </div>
+
+        {!currentUser && (
+          <button 
+            onClick={onLoginClick}
+            className="w-full mt-8 py-4 bg-aladeen-green text-white rounded-2xl font-bold text-lg shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all active:scale-[0.98]"
+          >
+            Login or Create Account
+          </button>
+        )}
+
+        {currentUser?.role === 'admin' && (
+          <div className="mt-8 pt-8 border-t border-slate-50">
+            <button 
+              onClick={onAdminClick}
+              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg shadow-lg shadow-slate-900/20 hover:bg-slate-800 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+            >
+              <BarChart3 className="w-6 h-6 text-aladeen-green" />
+              Access Admin Dashboard
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="bg-slate-50 rounded-[2.5rem] p-8 mb-12 flex flex-col md:flex-row items-center gap-8 border border-slate-100">
@@ -913,6 +1139,7 @@ const AdminDashboard = ({
   onDeleteApp: (appId: string) => void; 
   onBack: () => void; 
 }) => {
+  const [activeTab, setActiveTab] = useState<'manage' | 'analytics'>('manage');
   const [isAdding, setIsAdding] = useState(false);
   const [editingApp, setEditingApp] = useState<AppData | null>(null);
   const [uploadingApk, setUploadingApk] = useState(false);
@@ -927,8 +1154,10 @@ const AdminDashboard = ({
     size: '0 MB',
     icon: 'https://picsum.photos/seed/app/200/200',
     banner: 'https://picsum.photos/seed/banner/800/400',
+    shortDescription: '',
     description: '',
-    screenshots: ['https://picsum.photos/seed/s1/400/800', 'https://picsum.photos/seed/s2/400/800'],
+    screenshots: ['https://picsum.photos/seed/s1/400/800', 'https://picsum.photos/seed/s2/400/800', 'https://picsum.photos/seed/s3/400/800'],
+    promoVideo: '',
     isVerified: true,
     isFeatured: false,
     isTrending: false,
@@ -936,6 +1165,27 @@ const AdminDashboard = ({
     reviews_list: [],
     apkUrl: ''
   });
+
+  const stats = useMemo(() => {
+    const totalDownloads = apps.reduce((acc, app) => {
+      const d = parseInt(app.downloads.replace(/[^0-9]/g, '')) || 0;
+      const multiplier = app.downloads.includes('M') ? 1000000 : app.downloads.includes('K') ? 1000 : 1;
+      return acc + (d * multiplier);
+    }, 0);
+
+    const totalReviews = apps.reduce((acc, app) => {
+      const r = parseInt(app.reviews.replace(/[^0-9]/g, '')) || 0;
+      const multiplier = app.reviews.includes('M') ? 1000000 : app.reviews.includes('K') ? 1000 : 1;
+      return acc + (r * multiplier);
+    }, 0);
+
+    return {
+      totalApps: apps.length,
+      totalDownloads: totalDownloads >= 1000000 ? `${(totalDownloads / 1000000).toFixed(1)}M` : totalDownloads >= 1000 ? `${(totalDownloads / 1000).toFixed(1)}K` : totalDownloads,
+      totalReviews: totalReviews >= 1000000 ? `${(totalReviews / 1000000).toFixed(1)}M` : totalReviews >= 1000 ? `${(totalReviews / 1000).toFixed(1)}K` : totalReviews,
+      avgRating: apps.length > 0 ? (apps.reduce((acc, app) => acc + app.rating, 0) / apps.length).toFixed(1) : '0.0'
+    };
+  }, [apps]);
 
   const handleApkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -989,8 +1239,10 @@ const AdminDashboard = ({
       size: '0 MB',
       icon: 'https://picsum.photos/seed/app/200/200',
       banner: 'https://picsum.photos/seed/banner/800/400',
+      shortDescription: '',
       description: '',
-      screenshots: ['https://picsum.photos/seed/s1/400/800', 'https://picsum.photos/seed/s2/400/800'],
+      screenshots: ['https://picsum.photos/seed/s1/400/800', 'https://picsum.photos/seed/s2/400/800', 'https://picsum.photos/seed/s3/400/800'],
+      promoVideo: '',
       isVerified: true,
       isFeatured: false,
       isTrending: false,
@@ -1014,9 +1266,25 @@ const AdminDashboard = ({
             <button onClick={onBack} className="p-2 hover:bg-white rounded-full transition-colors shadow-sm">
               <ArrowLeft className="w-6 h-6 text-slate-700" />
             </button>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Admin <span className="text-aladeen-green">Dashboard</span></h1>
+            <div>
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Admin <span className="text-aladeen-green">Dashboard</span></h1>
+              <div className="flex items-center gap-4 mt-2">
+                <button 
+                  onClick={() => setActiveTab('manage')}
+                  className={`text-sm font-bold transition-colors ${activeTab === 'manage' ? 'text-aladeen-green' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  Manage Apps
+                </button>
+                <button 
+                  onClick={() => setActiveTab('analytics')}
+                  className={`text-sm font-bold transition-colors ${activeTab === 'analytics' ? 'text-aladeen-green' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  Analytics
+                </button>
+              </div>
+            </div>
           </div>
-          {!isAdding && (
+          {!isAdding && activeTab === 'manage' && (
             <button 
               onClick={() => setIsAdding(true)}
               className="flex items-center gap-2 bg-aladeen-green text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all active:scale-95"
@@ -1027,7 +1295,38 @@ const AdminDashboard = ({
           )}
         </div>
 
-        {isAdding ? (
+        {activeTab === 'analytics' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 mb-4">
+                <LayoutGrid className="w-6 h-6" />
+              </div>
+              <div className="text-2xl font-black text-slate-900">{stats.totalApps}</div>
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Total Apps</div>
+            </div>
+            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+              <div className="w-12 h-12 bg-aladeen-green/10 rounded-2xl flex items-center justify-center text-aladeen-green mb-4">
+                <Download className="w-6 h-6" />
+              </div>
+              <div className="text-2xl font-black text-slate-900">{stats.totalDownloads}</div>
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Total Downloads</div>
+            </div>
+            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+              <div className="w-12 h-12 bg-yellow-50 rounded-2xl flex items-center justify-center text-yellow-500 mb-4">
+                <Star className="w-6 h-6" />
+              </div>
+              <div className="text-2xl font-black text-slate-900">{stats.avgRating}</div>
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Avg Rating</div>
+            </div>
+            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+              <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-500 mb-4">
+                <FileText className="w-6 h-6" />
+              </div>
+              <div className="text-2xl font-black text-slate-900">{stats.totalReviews}</div>
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Total Reviews</div>
+            </div>
+          </div>
+        ) : isAdding ? (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1090,7 +1389,19 @@ const AdminDashboard = ({
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Description</label>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Short Description (Max 80 chars)</label>
+                  <input 
+                    required
+                    type="text" 
+                    maxLength={80}
+                    value={formData.shortDescription}
+                    onChange={e => setFormData({...formData, shortDescription: e.target.value})}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                    placeholder="Brief summary of the app..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Full Description</label>
                   <textarea 
                     required
                     value={formData.description}
@@ -1103,7 +1414,7 @@ const AdminDashboard = ({
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Icon URL</label>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">App Icon (512×512 px)</label>
                   <div className="flex gap-4">
                     <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 border border-slate-200">
                       <img src={formData.icon} alt="preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -1113,17 +1424,55 @@ const AdminDashboard = ({
                       value={formData.icon}
                       onChange={e => setFormData({...formData, icon: e.target.value})}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                      placeholder="Icon URL"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Banner URL</label>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Feature Graphic (1024×500 px)</label>
                   <input 
                     type="text" 
                     value={formData.banner}
                     onChange={e => setFormData({...formData, banner: e.target.value})}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                    placeholder="Feature Graphic URL"
                   />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Promo Video URL (Optional)</label>
+                  <input 
+                    type="text" 
+                    value={formData.promoVideo}
+                    onChange={e => setFormData({...formData, promoVideo: e.target.value})}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                    placeholder="YouTube Video ID or URL"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Mobile Preview Images (Screenshots)</label>
+                  <div className="space-y-2">
+                    {formData.screenshots?.map((s, i) => (
+                      <input 
+                        key={i}
+                        type="text" 
+                        value={s}
+                        onChange={e => {
+                          const newScreenshots = [...(formData.screenshots || [])];
+                          newScreenshots[i] = e.target.value;
+                          setFormData({...formData, screenshots: newScreenshots});
+                        }}
+                        className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all text-sm"
+                        placeholder={`Screenshot ${i + 1} URL`}
+                      />
+                    ))}
+                    <button 
+                      type="button"
+                      onClick={() => setFormData({...formData, screenshots: [...(formData.screenshots || []), 'https://picsum.photos/seed/new/400/800']})}
+                      className="text-xs font-bold text-aladeen-green hover:underline"
+                    >
+                      + Add Screenshot
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
@@ -1322,7 +1671,26 @@ export default function App() {
     return saved ? JSON.parse(saved) : MOCK_APPS;
   });
 
+  const [currentUser, setCurrentUser] = useState<any>(() => {
+    const saved = localStorage.getItem('aladeen_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
   const [view, setView] = useState<'home' | 'listing' | 'profile' | 'admin'>('home');
+
+  const handleLogin = (user: any) => {
+    setCurrentUser(user);
+    localStorage.setItem('aladeen_user', JSON.stringify(user));
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('aladeen_user');
+    setView('home');
+    toast.success('Logged out successfully');
+  };
 
   const handleAddApp = (newApp: AppData) => {
     const updatedApps = [newApp, ...allApps];
@@ -1516,11 +1884,11 @@ export default function App() {
           </div>
           <div className="flex items-center gap-2">
             <button 
-              onClick={() => setView('profile')}
+              onClick={() => currentUser ? setView('profile') : setIsAuthModalOpen(true)}
               className={`p-2 hover:bg-slate-50 rounded-xl transition-colors ${view === 'profile' ? 'text-aladeen-green bg-aladeen-green/5' : 'text-slate-700'}`}
-              title="User Profile"
+              title={currentUser ? "User Profile" : "Login"}
             >
-              <User className="w-6 h-6" />
+              {currentUser ? <User className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
             </button>
             <button className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
               <Menu className="w-6 h-6 text-slate-700" />
@@ -1538,6 +1906,9 @@ export default function App() {
             onBack={() => setView('home')}
             onAdminClick={() => setView('admin')}
             downloadingApps={downloadingApps}
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            onLoginClick={() => setIsAuthModalOpen(true)}
           />
         ) : view === 'home' ? (
           <>
@@ -1826,16 +2197,36 @@ export default function App() {
             onAppClick={setSelectedApp}
             apps={allApps}
             isInstalled={installedApps.includes(selectedApp.id)}
-            onInstall={() => startDownload(selectedApp.id)}
+            onInstall={() => {
+              if (!currentUser) {
+                setIsAuthModalOpen(true);
+                toast.info('Please login to download apps');
+                return;
+              }
+              startDownload(selectedApp.id);
+            }}
             onUninstall={() => handleUninstall(selectedApp.id)}
             userReview={userReviews[selectedApp.id] || null}
-            onRate={(rating, comment) => handleRate(selectedApp.id, rating, comment)}
+            onRate={(rating, comment) => {
+              if (!currentUser) {
+                setIsAuthModalOpen(true);
+                toast.info('Please login to leave a review');
+                return;
+              }
+              handleRate(selectedApp.id, rating, comment);
+            }}
             downloadProgress={downloadingApps[selectedApp.id]}
             isWishlisted={wishlist.includes(selectedApp.id)}
             onToggleWishlist={() => toggleWishlist(selectedApp.id)}
           />
         )}
       </AnimatePresence>
+
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        onLogin={handleLogin} 
+      />
 
       {/* Category Detail Overlay */}
       <AnimatePresence>
