@@ -90,6 +90,126 @@ export const CATEGORIES: CategoryData[] = [
     description: "Discover the best deals on mobile phones, laptops, and home appliances.",
     icon: "Smartphone",
     banner: "https://picsum.photos/seed/electronics_banner/1200/400"
+  },
+  {
+    name: "Health",
+    description: "Stay fit and healthy with the best health and fitness apps.",
+    icon: "Activity",
+    banner: "https://picsum.photos/seed/health_banner/1200/400"
+  },
+  {
+    name: "Travel",
+    description: "Plan your next adventure with top travel and local apps.",
+    icon: "Globe",
+    banner: "https://picsum.photos/seed/travel_banner/1200/400"
+  },
+  {
+    name: "Social",
+    description: "Connect with friends and family using popular social apps.",
+    icon: "Users",
+    banner: "https://picsum.photos/seed/social_banner/1200/400"
+  },
+  {
+    name: "Photography",
+    description: "Capture and edit beautiful moments with photography apps.",
+    icon: "ImageIcon",
+    banner: "https://picsum.photos/seed/photo_banner/1200/400"
+  },
+  {
+    name: "Finance",
+    description: "Manage your money and investments with finance apps.",
+    icon: "BarChart3",
+    banner: "https://picsum.photos/seed/finance_banner/1200/400"
+  },
+  {
+    name: "Food Delivery",
+    description: "Order your favorite meals from the best restaurants in town.",
+    icon: "UtensilsCrossed",
+    banner: "https://picsum.photos/seed/food_banner/1200/400"
+  },
+  {
+    name: "Pharmacy",
+    description: "Order medicines and healthcare products from trusted pharmacies.",
+    icon: "Pill",
+    banner: "https://picsum.photos/seed/pharmacy_banner/1200/400"
+  },
+  {
+    name: "Lifestyle",
+    description: "Enhance your daily life with the best lifestyle apps.",
+    icon: "Heart",
+    banner: "https://picsum.photos/seed/lifestyle_banner/1200/400"
+  },
+  {
+    name: "Entertainment",
+    description: "Watch movies, listen to music, and stay entertained.",
+    icon: "Tv",
+    banner: "https://picsum.photos/seed/ent_banner/1200/400"
+  },
+  {
+    name: "Tools",
+    description: "Essential tools and utilities for your Android device.",
+    icon: "Wrench",
+    banner: "https://picsum.photos/seed/tools_banner/1200/400"
+  },
+  {
+    name: "Productivity",
+    description: "Boost your efficiency with top productivity tools.",
+    icon: "CheckCircle2",
+    banner: "https://picsum.photos/seed/prod_banner/1200/400"
+  },
+  {
+    name: "News",
+    description: "Stay informed with the latest news and updates.",
+    icon: "Globe",
+    banner: "https://picsum.photos/seed/news_banner/1200/400"
+  },
+  {
+    name: "Music",
+    description: "Listen to your favorite tracks and discover new music.",
+    icon: "Play",
+    banner: "https://picsum.photos/seed/music_banner/1200/400"
+  },
+  {
+    name: "Sports",
+    description: "Follow your favorite sports and stay updated with scores.",
+    icon: "Activity",
+    banner: "https://picsum.photos/seed/sports_banner/1200/400"
+  },
+  {
+    name: "Weather",
+    description: "Get real-time weather updates and forecasts.",
+    icon: "Cloud",
+    banner: "https://picsum.photos/seed/weather_banner/1200/400"
+  },
+  {
+    name: "Communication",
+    description: "Stay connected with high-quality messaging and calling apps.",
+    icon: "MessageSquare",
+    banner: "https://picsum.photos/seed/comm_banner/1200/400"
+  },
+  {
+    name: "Auto & Vehicles",
+    description: "Everything you need for your car, from maintenance to buying and selling.",
+    icon: "Car",
+    banner: "https://picsum.photos/seed/auto_banner/1200/400"
+  },
+  {
+    name: "House & Home",
+    description: "Find inspiration and tools for your home improvement and interior design.",
+    icon: "Home",
+    banner: "https://picsum.photos/seed/home_banner/1200/400"
+  },
+  {
+    name: "Beauty",
+    description: "Discover the best beauty and personal care products and tips.",
+    icon: "Sparkles",
+    banner: "https://picsum.photos/seed/beauty_banner/1200/400"
+  },
+  {
+    name: "Dating",
+    description: "Meet new people and find your perfect match with top dating apps.",
+    icon: "Heart",
+    banner: "https://picsum.photos/seed/dating_banner/1200/400"
   }
 ];
 

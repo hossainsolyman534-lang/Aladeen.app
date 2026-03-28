@@ -57,13 +57,92 @@ import {
   EyeOff,
   Twitter,
   Instagram,
-  Linkedin
+  Linkedin,
+  UtensilsCrossed,
+  Pill,
+  Tv,
+  Wrench,
+  Cloud,
+  MessageSquare,
+  Car
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MOCK_APPS, AppData, CATEGORIES, MOCK_REVIEWS, CategoryData, ClientData, MOCK_CLIENTS } from './constants';
+import { db, auth } from './firebase';
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  getDocs, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  doc, 
+  setDoc,
+  getDoc,
+  getDocFromServer
+} from 'firebase/firestore';
+import { 
+  onAuthStateChanged, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut 
+} from 'firebase/auth';
 
 // --- Helpers ---
 const slugify = (text: string) => text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 // --- Route Wrappers ---
 const AppDetailRouteWrapper = ({ allApps, ...props }: any) => {
@@ -126,65 +205,9 @@ const AuthModal = ({
 }: { 
   isOpen: boolean; 
   onClose: () => void; 
-  onLogin: (user: any) => void;
+  onLogin: () => void;
   isAdminMode?: boolean;
 }) => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    password: ''
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (isAdminMode || (isLogin && formData.email === 'hossainsolyman534@gmail.com' && formData.password === '87654321')) {
-      if (formData.email === 'hossainsolyman534@gmail.com' && formData.password === '87654321') {
-        const adminUser = {
-          name: 'Admin',
-          email: 'hossainsolyman534@gmail.com',
-          role: 'admin'
-        };
-        onLogin(adminUser);
-        toast.success('Welcome back, Admin!');
-        onClose();
-        return;
-      } else if (isAdminMode) {
-        toast.error('Invalid admin credentials');
-        return;
-      }
-    }
-
-    if (isLogin) {
-      if (!formData.phone || !formData.password) {
-        toast.error('Please fill in all fields');
-        return;
-      }
-      const user = {
-        name: 'User',
-        phone: formData.phone,
-        role: 'user'
-      };
-      onLogin(user);
-      toast.success('Logged in successfully!');
-    } else {
-      if (!formData.name || !formData.phone || !formData.password) {
-        toast.error('Please fill in all fields');
-        return;
-      }
-      const user = {
-        name: formData.name,
-        phone: formData.phone,
-        role: 'user'
-      };
-      onLogin(user);
-      toast.success('Account created successfully!');
-    }
-    onClose();
-  };
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -206,10 +229,10 @@ const AuthModal = ({
               <div className="flex justify-between items-center mb-10">
                 <div>
                   <h2 className="text-3xl font-display font-bold text-slate-900 leading-tight">
-                    {isAdminMode ? 'Admin Portal' : isLogin ? 'Welcome Back' : 'Join Aladeen'}
+                    {isAdminMode ? 'Admin Portal' : 'Welcome to Aladeen'}
                   </h2>
                   <p className="text-slate-500 mt-1 text-sm">
-                    {isAdminMode ? 'Secure access for administrators' : isLogin ? 'Sign in to your account' : 'Create your account to get started'}
+                    {isAdminMode ? 'Secure access for administrators' : 'Sign in to access your apps and wishlist'}
                   </p>
                 </div>
                 <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors self-start">
@@ -217,108 +240,19 @@ const AuthModal = ({
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {isAdminMode ? (
-                  <>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Admin Email</label>
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                        <input 
-                          type="email" 
-                          required
-                          value={formData.email}
-                          onChange={e => setFormData({...formData, email: e.target.value})}
-                          className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-aladeen-green/10 focus:border-aladeen-green transition-all font-medium"
-                          placeholder="admin@aladeen.app"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                        <input 
-                          type="password" 
-                          required
-                          value={formData.password}
-                          onChange={e => setFormData({...formData, password: e.target.value})}
-                          className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-aladeen-green/10 focus:border-aladeen-green transition-all font-medium"
-                          placeholder="••••••••"
-                        />
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    {!isLogin && (
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                        <div className="relative">
-                          <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                          <input 
-                            type="text" 
-                            required
-                            value={formData.name}
-                            onChange={e => setFormData({...formData, name: e.target.value})}
-                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-aladeen-green/10 focus:border-aladeen-green transition-all font-medium"
-                            placeholder="Your Name"
-                          />
-                        </div>
-                      </div>
-                    )}
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
-                      <div className="relative">
-                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                        <input 
-                          type="tel" 
-                          required
-                          value={formData.phone}
-                          onChange={e => setFormData({...formData, phone: e.target.value})}
-                          className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-aladeen-green/10 focus:border-aladeen-green transition-all font-medium"
-                          placeholder="01XXXXXXXXX"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                        <input 
-                          type="password" 
-                          required
-                          value={formData.password}
-                          onChange={e => setFormData({...formData, password: e.target.value})}
-                          className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-aladeen-green/10 focus:border-aladeen-green transition-all font-medium"
-                          placeholder="••••••••"
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-
+              <div className="space-y-6">
                 <button 
-                  type="submit"
-                  className="w-full bg-aladeen-green text-white py-4 rounded-2xl font-bold shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all mt-4 active:scale-[0.98]"
+                  onClick={onLogin}
+                  className="w-full flex items-center justify-center gap-4 bg-white border border-slate-200 py-4 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm active:scale-[0.98]"
                 >
-                  {isAdminMode ? 'Access Dashboard' : isLogin ? 'Sign In' : 'Create Account'}
+                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
+                  <span>Continue with Google</span>
                 </button>
-              </form>
-
-              {!isAdminMode && (
-                <div className="mt-10 text-center">
-                  <p className="text-sm text-slate-500">
-                    {isLogin ? "Don't have an account?" : "Already have an account?"}
-                    <button 
-                      onClick={() => setIsLogin(!isLogin)}
-                      className="ml-2 text-aladeen-green font-bold hover:text-aladeen-dark transition-colors"
-                    >
-                      {isLogin ? 'Sign Up' : 'Login'}
-                    </button>
-                  </p>
-                </div>
-              )}
+                
+                <p className="text-center text-xs text-slate-400 font-medium px-6 leading-relaxed">
+                  By continuing, you agree to Aladeen's <span className="text-aladeen-green hover:underline cursor-pointer">Terms of Service</span> and <span className="text-aladeen-green hover:underline cursor-pointer">Privacy Policy</span>.
+                </p>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -438,6 +372,21 @@ const CategoryIcon = ({ icon }: { icon: string }) => {
     case 'GraduationCap': return <GraduationCap className="w-6 h-6" />;
     case 'Briefcase': return <Briefcase className="w-6 h-6" />;
     case 'Gamepad2': return <Gamepad2 className="w-6 h-6" />;
+    case 'Activity': return <Activity className="w-6 h-6" />;
+    case 'Globe': return <Globe className="w-6 h-6" />;
+    case 'Users': return <Users className="w-6 h-6" />;
+    case 'ImageIcon': return <ImageIcon className="w-6 h-6" />;
+    case 'BarChart3': return <BarChart3 className="w-6 h-6" />;
+    case 'UtensilsCrossed': return <UtensilsCrossed className="w-6 h-6" />;
+    case 'Pill': return <Pill className="w-6 h-6" />;
+    case 'Heart': return <Heart className="w-6 h-6" />;
+    case 'Tv': return <Tv className="w-6 h-6" />;
+    case 'Wrench': return <Wrench className="w-6 h-6" />;
+    case 'CheckCircle2': return <CheckCircle2 className="w-6 h-6" />;
+    case 'Cloud': return <Cloud className="w-6 h-6" />;
+    case 'Play': return <Play className="w-6 h-6" />;
+    case 'MessageSquare': return <MessageSquare className="w-6 h-6" />;
+    case 'Car': return <Car className="w-6 h-6" />;
     default: return <ShoppingBag className="w-6 h-6" />;
   }
 };
@@ -515,6 +464,13 @@ const AppDetail = ({
   const [comment, setComment] = useState(userReview?.comment || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (userReview) {
+      setTempRating(userReview.rating);
+      setComment(userReview.comment);
+    }
+  }, [userReview]);
+
   const relatedApps = useMemo(() => {
     return apps
       .filter(a => a.category === app.category && a.id !== app.id)
@@ -553,6 +509,18 @@ const AppDetail = ({
       return;
     }
     if (isInstalled) return;
+    
+    if (app.apkUrl) {
+      // Real download
+      const link = document.createElement('a');
+      link.href = app.apkUrl;
+      link.download = `${app.name}.apk`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success(`Starting download: ${app.name}`);
+    }
+    
     onInstall();
   };
 
@@ -1205,16 +1173,32 @@ const UserProfile = ({
 
       <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-100 mb-10">
         <div className="flex items-center gap-6">
-          <div className="w-24 h-24 rounded-full bg-aladeen-green/10 flex items-center justify-center text-aladeen-green border-4 border-white shadow-lg">
-            <User className="w-12 h-12" />
+          <div className="w-24 h-24 rounded-full bg-aladeen-green/10 flex items-center justify-center text-aladeen-green border-4 border-white shadow-lg overflow-hidden">
+            {currentUser?.photoURL ? (
+              <img src={currentUser.photoURL} alt={currentUser.name} className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-12 h-12" />
+            )}
           </div>
           <div>
             <h2 className="text-2xl font-black text-slate-900">{currentUser ? currentUser.name : 'Guest User'}</h2>
             <p className="text-slate-400 font-bold text-sm uppercase tracking-widest mt-1">
               {currentUser ? (currentUser.role === 'admin' ? 'Administrator' : 'Regular User') : 'Not Logged In'}
             </p>
-            {currentUser?.phone && <p className="text-slate-500 text-sm mt-1">{currentUser.phone}</p>}
             {currentUser?.email && <p className="text-slate-500 text-sm mt-1">{currentUser.email}</p>}
+            
+            {currentUser && (
+              <div className="flex gap-3 mt-4">
+                <div className="bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 shadow-sm">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Installed</span>
+                  <span className="text-lg font-black text-slate-900">{installedApps.length} Apps</span>
+                </div>
+                <div className="bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 shadow-sm">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Wishlist</span>
+                  <span className="text-lg font-black text-slate-900">{wishlistApps.length} Apps</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1238,26 +1222,6 @@ const UserProfile = ({
             </button>
           </div>
         )}
-      </div>
-
-      <div className="bg-slate-50 rounded-[2.5rem] p-8 mb-12 flex flex-col md:flex-row items-center gap-8 border border-slate-100">
-        <div className="w-24 h-24 rounded-full bg-aladeen-green/10 flex items-center justify-center text-aladeen-green">
-          <User className="w-12 h-12" />
-        </div>
-        <div className="text-center md:text-left">
-          <h2 className="text-3xl font-black text-slate-900 mb-1">Solyman Hossain</h2>
-          <p className="text-slate-500 font-medium mb-4">hossainsolyman534@gmail.com</p>
-          <div className="flex flex-wrap justify-center md:justify-start gap-3">
-            <div className="bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Installed</span>
-              <span className="text-lg font-black text-slate-900">{installedApps.length} Apps</span>
-            </div>
-            <div className="bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Member Since</span>
-              <span className="text-lg font-black text-slate-900">March 2026</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div>
@@ -2452,96 +2416,217 @@ export default function App() {
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [allApps, setAllApps] = useState<AppData[]>(() => {
-    const saved = localStorage.getItem('aladeen_all_apps');
-    return saved ? JSON.parse(saved) : MOCK_APPS;
-  });
-
-  const [currentUser, setCurrentUser] = useState<any>(() => {
-    const saved = localStorage.getItem('aladeen_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [allApps, setAllApps] = useState<AppData[]>([]);
+  const [allClients, setAllClients] = useState<ClientData[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAdminAuth, setIsAdminAuth] = useState(false);
 
-  const handleLogin = (user: any) => {
-    setCurrentUser(user);
-    localStorage.setItem('aladeen_user', JSON.stringify(user));
-    setIsAdminAuth(false);
+  // Test connection
+  useEffect(() => {
+    async function testConnection() {
+      try {
+        await getDocFromServer(doc(db, 'test', 'connection'));
+      } catch (error) {
+        if(error instanceof Error && error.message.includes('the client is offline')) {
+          console.error("Please check your Firebase configuration. ");
+        }
+      }
+    }
+    testConnection();
+  }, []);
+
+  // Auth listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Fetch user role from Firestore
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          const userData = userDoc.exists() ? userDoc.data() : { 
+            name: user.displayName, 
+            email: user.email, 
+            role: user.email === 'hossainsolyman534@gmail.com' ? 'admin' : 'user',
+            photoURL: user.photoURL
+          };
+          
+          if (!userDoc.exists()) {
+            await setDoc(doc(db, 'users', user.uid), userData);
+          }
+          
+          setCurrentUser({ uid: user.uid, ...userData });
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          setCurrentUser({ uid: user.uid, name: user.displayName, email: user.email, role: 'user' });
+        }
+      } else {
+        setCurrentUser(null);
+      }
+      setIsAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Apps listener
+  useEffect(() => {
+    const q = query(collection(db, 'apps'), orderBy('addedAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const apps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppData));
+      setAllApps(apps.length > 0 ? apps : MOCK_APPS);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'apps');
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Clients listener
+  useEffect(() => {
+    const q = query(collection(db, 'clients'), orderBy('onBoardDate', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const clients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ClientData));
+      setAllClients(clients.length > 0 ? clients : MOCK_CLIENTS);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'clients');
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Check if user exists in Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        const userData = {
+          name: user.displayName,
+          email: user.email,
+          role: user.email === 'hossainsolyman534@gmail.com' ? 'admin' : 'user',
+          photoURL: user.photoURL,
+          installedApps: [],
+          wishlist: [],
+          reviews: {}
+        };
+        await setDoc(doc(db, 'users', user.uid), userData);
+      }
+      
+      setIsAuthModalOpen(false);
+      toast.success('Logged in successfully');
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('Failed to login');
+    }
   };
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('aladeen_user');
-    navigate('/');
-    toast.success('Logged out successfully');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setCurrentUser(null);
+      navigate('/');
+      toast.success('Logged out successfully');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to logout');
+    }
   };
 
-  const handleAddApp = (newApp: AppData) => {
-    const updatedApps = [newApp, ...allApps];
-    setAllApps(updatedApps);
-    localStorage.setItem('aladeen_all_apps', JSON.stringify(updatedApps));
-    toast.success('App published successfully!');
+  useEffect(() => {
+    if (isAdminAuth && currentUser?.role === 'admin') {
+      navigate('/admin');
+      setIsAdminAuth(false);
+    }
+  }, [isAdminAuth, currentUser, navigate]);
+
+  const handleAddApp = async (newApp: AppData) => {
+    try {
+      const { id, ...appData } = newApp;
+      await addDoc(collection(db, 'apps'), appData);
+      toast.success('App published successfully!');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'apps');
+    }
   };
 
-  const handleUpdateApp = (updatedApp: AppData) => {
-    const updatedApps = allApps.map(app => app.id === updatedApp.id ? updatedApp : app);
-    setAllApps(updatedApps);
-    localStorage.setItem('aladeen_all_apps', JSON.stringify(updatedApps));
-    toast.success('App updated successfully!');
+  const handleUpdateApp = async (updatedApp: AppData) => {
+    try {
+      const { id, ...appData } = updatedApp;
+      await updateDoc(doc(db, 'apps', id), appData);
+      toast.success('App updated successfully!');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `apps/${updatedApp.id}`);
+    }
   };
 
-  const handleDeleteApp = (appId: string) => {
-    const updatedApps = allApps.filter(app => app.id !== appId);
-    setAllApps(updatedApps);
-    localStorage.setItem('aladeen_all_apps', JSON.stringify(updatedApps));
-    toast.success('App deleted successfully!');
+  const handleDeleteApp = async (appId: string) => {
+    try {
+      await deleteDoc(doc(db, 'apps', appId));
+      toast.success('App deleted successfully!');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `apps/${appId}`);
+    }
   };
 
-  const [allClients, setAllClients] = useState<ClientData[]>(() => {
-    const saved = localStorage.getItem('aladeen_clients');
-    return saved ? JSON.parse(saved) : MOCK_CLIENTS;
-  });
-
-  const handleAddClient = (newClient: ClientData) => {
-    const updated = [newClient, ...allClients];
-    setAllClients(updated);
-    localStorage.setItem('aladeen_clients', JSON.stringify(updated));
-    toast.success('Client added successfully!');
+  const handleAddClient = async (newClient: ClientData) => {
+    try {
+      const { id, ...clientData } = newClient;
+      await addDoc(collection(db, 'clients'), clientData);
+      toast.success('Client added successfully!');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'clients');
+    }
   };
 
-  const handleUpdateClient = (updatedClient: ClientData) => {
-    const updated = allClients.map(c => c.id === updatedClient.id ? updatedClient : c);
-    setAllClients(updated);
-    localStorage.setItem('aladeen_clients', JSON.stringify(updated));
-    toast.success('Client updated successfully!');
+  const handleUpdateClient = async (updatedClient: ClientData) => {
+    try {
+      const { id, ...clientData } = updatedClient;
+      await updateDoc(doc(db, 'clients', id), clientData);
+      toast.success('Client updated successfully!');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `clients/${updatedClient.id}`);
+    }
   };
 
-  const handleDeleteClient = (clientId: string) => {
-    const updated = allClients.filter(c => c.id !== clientId);
-    setAllClients(updated);
-    localStorage.setItem('aladeen_clients', JSON.stringify(updated));
-    toast.success('Client removed successfully!');
+  const handleDeleteClient = async (clientId: string) => {
+    try {
+      await deleteDoc(doc(db, 'clients', clientId));
+      toast.success('Client removed successfully!');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `clients/${clientId}`);
+    }
   };
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [sortBy, setSortBy] = useState<'popular' | 'latest' | 'rating' | 'downloads'>('popular');
-  const [installedApps, setInstalledApps] = useState<string[]>(() => {
-    const saved = localStorage.getItem('aladeen_installed');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [wishlist, setWishlist] = useState<string[]>(() => {
-    const saved = localStorage.getItem('aladeen_wishlist');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [installedApps, setInstalledApps] = useState<string[]>([]);
+  const [wishlist, setWishlist] = useState<string[]>([]);
   const [downloadingApps, setDownloadingApps] = useState<Record<string, number>>({});
-  const [userReviews, setUserReviews] = useState<Record<string, { rating: number; comment: string }>>(() => {
-    const saved = localStorage.getItem('aladeen_reviews');
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [userReviews, setUserReviews] = useState<Record<string, { rating: number; comment: string }>>({});
+
+  // User data listener
+  useEffect(() => {
+    if (!currentUser) {
+      setInstalledApps([]);
+      setWishlist([]);
+      setUserReviews({});
+      return;
+    }
+
+    const unsubscribe = onSnapshot(doc(db, 'users', currentUser.uid), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        setInstalledApps(data.installedApps || []);
+        setWishlist(data.wishlist || []);
+        setUserReviews(data.reviews || {});
+      }
+    });
+    return () => unsubscribe();
+  }, [currentUser]);
 
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -2550,23 +2635,35 @@ function AppContent() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleInstall = (appId: string) => {
+  const handleInstall = async (appId: string) => {
+    if (!currentUser) return;
     const newInstalled = [...installedApps, appId];
-    setInstalledApps(newInstalled);
-    localStorage.setItem('aladeen_installed', JSON.stringify(newInstalled));
+    try {
+      await updateDoc(doc(db, 'users', currentUser.uid), { installedApps: newInstalled });
+    } catch (error) {
+      console.error('Error updating installed apps:', error);
+    }
   };
 
-  const toggleWishlist = (appId: string) => {
+  const toggleWishlist = async (appId: string) => {
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+      toast.info('Please login to add to wishlist');
+      return;
+    }
     const newWishlist = wishlist.includes(appId)
       ? wishlist.filter(id => id !== appId)
       : [...wishlist, appId];
-    setWishlist(newWishlist);
-    localStorage.setItem('aladeen_wishlist', JSON.stringify(newWishlist));
     
-    if (newWishlist.includes(appId)) {
-      toast.success('Added to wishlist');
-    } else {
-      toast.info('Removed from wishlist');
+    try {
+      await updateDoc(doc(db, 'users', currentUser.uid), { wishlist: newWishlist });
+      if (newWishlist.includes(appId)) {
+        toast.success('Added to wishlist');
+      } else {
+        toast.info('Removed from wishlist');
+      }
+    } catch (error) {
+      console.error('Error updating wishlist:', error);
     }
   };
 
@@ -2604,16 +2701,26 @@ function AppContent() {
     }, 400);
   };
 
-  const handleUninstall = (appId: string) => {
+  const handleUninstall = async (appId: string) => {
+    if (!currentUser) return;
     const newInstalled = installedApps.filter(id => id !== appId);
-    setInstalledApps(newInstalled);
-    localStorage.setItem('aladeen_installed', JSON.stringify(newInstalled));
+    try {
+      await updateDoc(doc(db, 'users', currentUser.uid), { installedApps: newInstalled });
+      toast.success('App uninstalled');
+    } catch (error) {
+      console.error('Error uninstalling app:', error);
+    }
   };
 
-  const handleRate = (appId: string, rating: number, comment: string) => {
+  const handleRate = async (appId: string, rating: number, comment: string) => {
+    if (!currentUser) return;
     const newReviews = { ...userReviews, [appId]: { rating, comment } };
-    setUserReviews(newReviews);
-    localStorage.setItem('aladeen_reviews', JSON.stringify(newReviews));
+    try {
+      await updateDoc(doc(db, 'users', currentUser.uid), { reviews: newReviews });
+      toast.success('Review submitted');
+    } catch (error) {
+      console.error('Error submitting review:', error);
+    }
   };
 
   const parseDownloads = (downloads: string): number => {
@@ -2737,6 +2844,17 @@ function AppContent() {
             <span>aladeen<span className="text-slate-900">.app</span></span>
           </div>
           <div className="flex items-center gap-3">
+            <div className="hidden lg:flex items-center gap-6 mr-8 border-r border-slate-100 pr-8 max-w-[400px] overflow-x-auto no-scrollbar whitespace-nowrap">
+              {CATEGORIES.map(cat => (
+                <button 
+                  key={cat.name}
+                  onClick={() => navigate(`/category/${slugify(cat.name)}`)}
+                  className="text-[11px] font-bold text-slate-400 uppercase tracking-widest hover:text-aladeen-green transition-colors flex-shrink-0"
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
             <button 
               onClick={() => {
                 setIsAdminAuth(false);
@@ -3030,31 +3148,6 @@ function AppContent() {
                 </div>
               </section>
 
-              {/* Why Aladeen Section */}
-              <section className="px-6 py-32 bg-slate-50/30">
-                <div className="max-w-6xl mx-auto">
-                  <div className="text-center mb-20">
-                    <h2 className="text-4xl md:text-5xl font-display font-extrabold text-slate-900 mb-6 tracking-tight">Why Choose Aladeen?</h2>
-                    <p className="text-slate-500 text-lg max-w-2xl mx-auto font-medium">We provide the most secure and efficient way to access e-commerce apps in Bangladesh.</p>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                    {[
-                      { title: 'Verified APKs', desc: 'Every app is manually checked for security and performance.', icon: ShieldCheck },
-                      { title: 'Fast Delivery', desc: 'Direct download links with high-speed servers for instant access.', icon: Zap },
-                      { title: 'Curated List', desc: 'Only the top-rated and most reliable shopping apps are listed.', icon: Sparkles },
-                    ].map((feature, i) => (
-                      <div key={i} className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 hover:shadow-premium transition-all group">
-                        <div className="w-16 h-16 bg-aladeen-green/10 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-aladeen-green group-hover:text-white transition-colors">
-                          <feature.icon className="w-8 h-8 text-aladeen-green group-hover:text-white" />
-                        </div>
-                        <h3 className="text-2xl font-display font-bold text-slate-900 mb-4">{feature.title}</h3>
-                        <p className="text-slate-500 text-base leading-relaxed font-medium">{feature.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </section>
-
               {/* Featured Category */}
               <div className="px-6 mb-20">
                 <motion.div 
@@ -3199,24 +3292,8 @@ function AppContent() {
               </ul>
             </div>
             <div>
-              <h4 className="text-xs font-black uppercase tracking-[0.2em] mb-8 text-white/50">Admin & Support</h4>
+              <h4 className="text-xs font-black uppercase tracking-[0.2em] mb-8 text-white/50">Legal</h4>
               <ul className="space-y-5">
-                <li>
-                  <button 
-                    onClick={() => {
-                      if (isAdminAuth && currentUser?.role === 'admin') {
-                        navigate('/admin');
-                      } else {
-                        setIsAdminAuth(true);
-                        setIsAuthModalOpen(true);
-                      }
-                    }}
-                    className="text-slate-400 hover:text-aladeen-green transition-colors font-bold text-lg"
-                  >
-                    Admin Portal
-                  </button>
-                </li>
-                <li><a href="#" className="text-slate-400 hover:text-aladeen-green transition-colors font-bold text-lg">Developer API</a></li>
                 <li><a href="#" className="text-slate-400 hover:text-aladeen-green transition-colors font-bold text-lg">Terms of Service</a></li>
                 <li><a href="#" className="text-slate-400 hover:text-aladeen-green transition-colors font-bold text-lg">Privacy Policy</a></li>
               </ul>
@@ -3239,12 +3316,7 @@ function AppContent() {
           setIsAuthModalOpen(false);
           setIsAdminAuth(false);
         }} 
-        onLogin={(user) => {
-          handleLogin(user);
-          if (isAdminAuth && user.role === 'admin') {
-            navigate('/admin');
-          }
-        }} 
+        onLogin={handleLogin} 
         isAdminMode={isAdminAuth}
       />
 

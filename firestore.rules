@@ -1,0 +1,123 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: apps
+    // Document ID: appId
+    // Fields:
+    //   - name: string (required)
+    //   - developer: string (required)
+    //   - rating: number
+    //   - reviews: string
+    //   - size: string
+    //   - downloads: string
+    //   - category: string (required)
+    //   - icon: string (required)
+    //   - banner: string (required)
+    //   - shortDescription: string (required)
+    //   - description: string (required)
+    //   - screenshots: list (required)
+    //   - promoVideo: string
+    //   - isVerified: bool
+    //   - isTrending: bool
+    //   - isFeatured: bool
+    //   - addedAt: string (required)
+    //   - apkUrl: string
+    //   - expiryDate: string
+    //
+    // Collection: clients
+    // Document ID: clientId
+    // Fields:
+    //   - name: string (required)
+    //   - onBoardDate: string (required)
+    //   - website: string
+    //   - facebook: string
+    //   - contactNumber: string (required)
+    //   - notes: string
+    //
+    // Collection: users
+    // Document ID: userId
+    // Fields:
+    //   - name: string (required)
+    //   - email: string (required)
+    //   - role: string (required, enum: ['admin', 'user'])
+    //   - photoURL: string
+    //   - installedApps: list
+    //   - wishlist: list
+    //   - reviews: map
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "hossainsolyman534@gmail.com" && request.auth.token.email_verified == true));
+    }
+    
+    function isValidApp(data) {
+      return data.keys().hasAll(['name', 'developer', 'category', 'icon', 'banner', 'shortDescription', 'description', 'screenshots', 'addedAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.developer is string && data.developer.size() > 0 && data.developer.size() < 100 &&
+             data.category is string &&
+             data.icon is string &&
+             data.banner is string &&
+             data.shortDescription is string && data.shortDescription.size() > 0 && data.shortDescription.size() < 200 &&
+             data.description is string && data.description.size() > 0 && data.description.size() < 5000 &&
+             data.screenshots is list && data.screenshots.size() > 0 && data.screenshots.size() <= 10 &&
+             data.addedAt is string;
+    }
+    
+    function isValidClient(data) {
+      return data.keys().hasAll(['name', 'onBoardDate', 'contactNumber']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.onBoardDate is string &&
+             data.contactNumber is string && data.contactNumber.size() > 0 && data.contactNumber.size() < 20;
+    }
+    
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'email', 'role']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string &&
+             data.role in ['admin', 'user'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /apps/{appId} {
+      allow read: if true; // Publicly readable
+      allow create, update, delete: if isAdmin() && isValidApp(request.resource.data);
+    }
+    
+    match /clients/{clientId} {
+      allow read, write: if isAdmin();
+      allow create, update: if isAdmin() && isValidClient(request.resource.data);
+    }
+    
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'user' || isAdmin());
+      allow update: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+    }
+    
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}
