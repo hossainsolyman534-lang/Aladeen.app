@@ -50,11 +50,23 @@
         "email": { "type": "string", "format": "email", "description": "The user's email address." },
         "role": { "type": "string", "enum": ["admin", "user"], "description": "The user's role." },
         "photoURL": { "type": "string", "description": "The user's photo URL." },
-        "installedApps": { "type": "array", "items": { "type": "string" }, "description": "A list of installed app IDs." },
-        "wishlist": { "type": "array", "items": { "type": "string" }, "description": "A list of wishlisted app IDs." },
+        "installedApps": { "type": { "type": "array", "items": { "type": "string" } }, "description": "A list of installed app IDs." },
+        "wishlist": { "type": { "type": "array", "items": { "type": "string" } }, "description": "A list of wishlisted app IDs." },
         "reviews": { "type": "object", "description": "A map of app IDs to user reviews." }
       },
       "required": ["name", "email", "role"]
+    },
+    "FeaturedCategory": {
+      "title": "Featured Category",
+      "description": "A category that is featured on the home page.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the category." },
+        "icon": { "type": "string", "description": "The name of the Lucide icon to use." },
+        "color": { "type": "string", "description": "The tailwind color class for the icon background." },
+        "order": { "type": "number", "description": "The display order." }
+      },
+      "required": ["name", "icon", "color", "order"]
     }
   },
   "firestore": {
@@ -69,6 +81,10 @@
     "/users/{userId}": {
       "schema": "UserProfile",
       "description": "Collection of user profiles."
+    },
+    "/featuredCategories/{categoryId}": {
+      "schema": "FeaturedCategory",
+      "description": "Collection of featured categories."
     }
   }
 }

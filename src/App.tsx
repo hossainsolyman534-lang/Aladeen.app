@@ -67,7 +67,7 @@ import {
   Car
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MOCK_APPS, AppData, CATEGORIES, MOCK_REVIEWS, CategoryData, ClientData, MOCK_CLIENTS } from './constants';
+import { MOCK_APPS, AppData, CATEGORIES, MOCK_REVIEWS, CategoryData, ClientData, MOCK_CLIENTS, FeaturedCategory } from './constants';
 import { db, auth } from './firebase';
 import { 
   collection, 
@@ -295,9 +295,9 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
       whileHover={{ y: -8, shadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className={`bg-white rounded-[2.5rem] border border-slate-100/60 overflow-hidden cursor-pointer group transition-all duration-500 hover:border-aladeen-green/20 ${variant === 'compact' ? 'p-4' : 'p-6'}`}
+      className={`bg-white rounded-[2.5rem] border border-slate-100/60 overflow-hidden cursor-pointer group transition-all duration-500 hover:border-aladeen-green/20 ${variant === 'compact' ? 'p-3' : 'p-4'}`}
     >
-      <div className={`aspect-square rounded-2xl overflow-hidden mb-4 shadow-sm relative transition-transform duration-500 group-hover:scale-105 ${variant === 'compact' ? 'w-16 h-16 mx-auto' : 'w-full'}`}>
+      <div className={`aspect-square rounded-2xl overflow-hidden mb-3 shadow-sm relative transition-transform duration-500 group-hover:scale-105 ${variant === 'compact' ? 'w-12 h-12 mx-auto' : 'w-20 h-20 mx-auto'}`}>
         <img 
           src={app.icon} 
           alt={app.name} 
@@ -305,8 +305,8 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
           referrerPolicy="no-referrer"
         />
         {app.isVerified && (
-          <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full p-1 shadow-sm border border-slate-50">
-            <CheckCircle2 className="w-3.5 h-3.5 text-aladeen-green fill-aladeen-green/10" />
+          <div className="absolute top-1 right-1 bg-white/90 backdrop-blur-sm rounded-full p-0.5 shadow-sm border border-slate-50">
+            <CheckCircle2 className="w-2.5 h-2.5 text-aladeen-green fill-aladeen-green/10" />
           </div>
         )}
         {isExpired && (
@@ -319,10 +319,10 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
         )}
       </div>
       <div className={variant === 'compact' ? 'text-center' : ''}>
-        <h3 className={`font-bold text-slate-900 truncate mb-0.5 ${variant === 'compact' ? 'text-xs' : 'text-sm'}`}>
+        <h3 className={`font-bold text-slate-900 truncate mb-0.5 ${variant === 'compact' ? 'text-[10px]' : 'text-xs'}`}>
           <HighlightedText text={app.name} highlight={highlight} />
         </h3>
-        <p className="text-[10px] font-medium text-slate-400 truncate mb-1 uppercase tracking-wider">
+        <p className="text-[8px] font-medium text-slate-400 truncate mb-1 uppercase tracking-wider">
           <HighlightedText text={app.developer} highlight={highlight} />
         </p>
         
@@ -346,12 +346,12 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
             </div>
           </motion.div>
         ) : (
-          <div className={`flex items-center gap-1.5 mt-2 ${variant === 'compact' ? 'justify-center' : ''}`}>
-            <div className="flex items-center gap-0.5 bg-slate-50 px-1.5 py-0.5 rounded-md">
-              <span className="text-[10px] font-black text-slate-700">{app.rating}</span>
-              <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
+          <div className={`flex items-center gap-1 mt-1 ${variant === 'compact' ? 'justify-center' : ''}`}>
+            <div className="flex items-center gap-0.5 bg-slate-50 px-1 py-0.5 rounded-md">
+              <span className="text-[8px] font-black text-slate-700">{app.rating}</span>
+              <Star className="w-2 h-2 fill-yellow-400 text-yellow-400" />
             </div>
-            <span className="text-[10px] font-bold text-slate-300 ml-auto">{app.size}</span>
+            <span className="text-[8px] font-bold text-slate-300 ml-auto">{app.size}</span>
           </div>
         )}
       </div>
@@ -1286,6 +1286,10 @@ const AdminDashboard = ({
   onAddClient,
   onUpdateClient,
   onDeleteClient,
+  featuredCategories,
+  onAddFeatured,
+  onUpdateFeatured,
+  onDeleteFeatured,
   onBack 
 }: { 
   apps: AppData[]; 
@@ -1296,16 +1300,25 @@ const AdminDashboard = ({
   onAddClient: (client: ClientData) => void;
   onUpdateClient: (client: ClientData) => void;
   onDeleteClient: (clientId: string) => void;
+  featuredCategories: FeaturedCategory[];
+  onAddFeatured: (cat: FeaturedCategory) => void;
+  onUpdateFeatured: (cat: FeaturedCategory) => void;
+  onDeleteFeatured: (catId: string) => void;
   onBack: () => void; 
 }) => {
-  const [activeTab, setActiveTab] = useState<'manage' | 'analytics' | 'clients'>('manage');
+  const [activeTab, setActiveTab] = useState<'manage' | 'analytics' | 'clients' | 'featured'>('manage');
   const [isAdding, setIsAdding] = useState(false);
   const [editingApp, setEditingApp] = useState<AppData | null>(null);
   
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientData | null>(null);
+
+  const [isAddingFeatured, setIsAddingFeatured] = useState(false);
+  const [editingFeatured, setEditingFeatured] = useState<FeaturedCategory | null>(null);
+
   const [appToDelete, setAppToDelete] = useState<AppData | null>(null);
   const [clientToDelete, setClientToDelete] = useState<ClientData | null>(null);
+  const [featuredToDelete, setFeaturedToDelete] = useState<FeaturedCategory | null>(null);
   const [clientSortField, setClientSortField] = useState<'onBoardDate' | 'notes'>('onBoardDate');
   const [clientSortOrder, setClientSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showNotesColumn, setShowNotesColumn] = useState(true);
@@ -1320,7 +1333,29 @@ const AdminDashboard = ({
     notes: ''
   });
 
-  const [uploadingApk, setUploadingApk] = useState(false);
+  const [featuredFormData, setFeaturedFormData] = useState<Partial<FeaturedCategory>>({
+    name: '',
+    icon: 'LayoutGrid',
+    color: 'bg-aladeen-green',
+    order: featuredCategories.length + 1
+  });
+
+  const handleFeaturedSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingFeatured) {
+      onUpdateFeatured({ ...editingFeatured, ...featuredFormData } as FeaturedCategory);
+    } else {
+      onAddFeatured({ id: Math.random().toString(36).substr(2, 9), ...featuredFormData } as FeaturedCategory);
+    }
+    setIsAddingFeatured(false);
+    setEditingFeatured(null);
+    setFeaturedFormData({
+      name: '',
+      icon: 'LayoutGrid',
+      color: 'bg-aladeen-green',
+      order: featuredCategories.length + 1
+    });
+  };
   const [apkProgress, setApkProgress] = useState(0);
   const [formData, setFormData] = useState<Partial<AppData>>({
     name: '',
@@ -1360,11 +1395,12 @@ const AdminDashboard = ({
 
     return {
       totalApps: apps.length,
+      totalFeatured: featuredCategories.length,
       totalDownloads: totalDownloads >= 1000000 ? `${(totalDownloads / 1000000).toFixed(1)}M` : totalDownloads >= 1000 ? `${(totalDownloads / 1000).toFixed(1)}K` : totalDownloads,
       totalReviews: totalReviews >= 1000000 ? `${(totalReviews / 1000000).toFixed(1)}M` : totalReviews >= 1000 ? `${(totalReviews / 1000).toFixed(1)}K` : totalReviews,
       avgRating: apps.length > 0 ? (apps.reduce((acc, app) => acc + app.rating, 0) / apps.length).toFixed(1) : '0.0'
     };
-  }, [apps]);
+  }, [apps, featuredCategories]);
 
   const adminFilteredApps = useMemo(() => {
     return apps.filter(app => 
@@ -1540,10 +1576,16 @@ const AdminDashboard = ({
                 >
                   Clients
                 </button>
+                <button 
+                  onClick={() => setActiveTab('featured')}
+                  className={`text-sm font-bold transition-colors ${activeTab === 'featured' ? 'text-aladeen-green' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  Featured Categories
+                </button>
               </div>
             </div>
           </div>
-          {!isAdding && !isAddingClient && activeTab === 'manage' && (
+          {!isAdding && !isAddingClient && !isAddingFeatured && activeTab === 'manage' && (
             <div className="flex items-center gap-4">
               <div className="relative group">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-aladeen-green transition-colors" />
@@ -1564,7 +1606,7 @@ const AdminDashboard = ({
               </button>
             </div>
           )}
-          {!isAdding && !isAddingClient && activeTab === 'clients' && (
+          {!isAdding && !isAddingClient && !isAddingFeatured && activeTab === 'clients' && (
             <div className="flex items-center gap-4">
               <div className="relative group">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-aladeen-green transition-colors" />
@@ -1596,6 +1638,60 @@ const AdminDashboard = ({
             </div>
           )}
         </div>
+
+          {!isAdding && !isAddingClient && !isAddingFeatured && activeTab === 'featured' && (
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setIsAddingFeatured(true)}
+                className="flex items-center gap-2 bg-aladeen-green text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all active:scale-95"
+              >
+                <PlusCircle className="w-5 h-5" />
+                Add Featured Category
+              </button>
+            </div>
+          )}
+        </div>
+
+        {activeTab === 'featured' && (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredCategories.map(cat => {
+                const IconComponent = (require('lucide-react') as any)[cat.icon] || LayoutGrid;
+                return (
+                  <div key={cat.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:border-aladeen-green/20 transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-current/20 ${cat.color}`}>
+                        <IconComponent className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-900">{cat.name}</h3>
+                        <p className="text-xs text-slate-400 font-medium">Order: {cat.order}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => {
+                          setEditingFeatured(cat);
+                          setFeaturedFormData(cat);
+                          setIsAddingFeatured(true);
+                        }}
+                        className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-aladeen-green transition-colors"
+                      >
+                        <Edit className="w-5 h-5" />
+                      </button>
+                      <button 
+                        onClick={() => setFeaturedToDelete(cat)}
+                        className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-rose-500 transition-colors"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {activeTab === 'analytics' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
@@ -2324,9 +2420,133 @@ const AdminDashboard = ({
             </div>
           </div>
         )}
-      </div>
 
-      <AnimatePresence>
+        <AnimatePresence>
+          {isAddingFeatured && (
+            <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsAddingFeatured(false)}
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+              />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="bg-white w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-premium relative z-10"
+              >
+                <form onSubmit={handleFeaturedSubmit} className="p-10">
+                  <div className="flex justify-between items-center mb-8">
+                    <h2 className="text-3xl font-display font-black text-slate-900 tracking-tight">
+                      {editingFeatured ? 'Edit Featured Category' : 'Add Featured Category'}
+                    </h2>
+                    <button type="button" onClick={() => setIsAddingFeatured(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                      <X className="w-6 h-6 text-slate-400" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Category Name</label>
+                      <input 
+                        value={featuredFormData.name}
+                        onChange={e => setFeaturedFormData({ ...featuredFormData, name: e.target.value })}
+                        required
+                        className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-aladeen-green/20 font-bold"
+                        placeholder="e.g. Communication"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Lucide Icon Name</label>
+                      <input 
+                        value={featuredFormData.icon}
+                        onChange={e => setFeaturedFormData({ ...featuredFormData, icon: e.target.value })}
+                        required
+                        className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-aladeen-green/20 font-bold"
+                        placeholder="e.g. MessageSquare"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Tailwind Color Class</label>
+                      <input 
+                        value={featuredFormData.color}
+                        onChange={e => setFeaturedFormData({ ...featuredFormData, color: e.target.value })}
+                        required
+                        className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-aladeen-green/20 font-bold"
+                        placeholder="e.g. bg-blue-500"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Display Order</label>
+                      <input 
+                        type="number"
+                        value={featuredFormData.order}
+                        onChange={e => setFeaturedFormData({ ...featuredFormData, order: parseInt(e.target.value) })}
+                        required
+                        className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-aladeen-green/20 font-bold"
+                        placeholder="e.g. 1"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <button type="button" onClick={() => setIsAddingFeatured(false)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 transition-all">Cancel</button>
+                    <button type="submit" className="flex-[2] py-4 bg-aladeen-green text-white rounded-2xl font-bold shadow-lg shadow-aladeen-green/20 hover:-translate-y-1 transition-all">
+                      {editingFeatured ? 'Save Changes' : 'Add Category'}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {featuredToDelete && (
+            <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setFeaturedToDelete(null)}
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+              />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-premium relative z-10 text-center"
+              >
+                <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center text-red-500 mx-auto mb-6">
+                  <Trash2 className="w-10 h-10" />
+                </div>
+                <h2 className="text-2xl font-black text-slate-900 mb-2">Remove Category?</h2>
+                <p className="text-slate-500 font-medium mb-8">
+                  Are you sure you want to remove <span className="text-slate-900 font-bold">"{featuredToDelete.name}"</span> from featured categories?
+                </p>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => {
+                      onDeleteFeatured(featuredToDelete.id);
+                      setFeaturedToDelete(null);
+                    }}
+                    className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-bold hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all active:scale-[0.98]"
+                  >
+                    Remove
+                  </button>
+                  <button 
+                    onClick={() => setFeaturedToDelete(null)}
+                    className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all active:scale-[0.98]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
         {appToDelete && (
           <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
             <motion.div 
@@ -2418,6 +2638,7 @@ function AppContent() {
   const location = useLocation();
   const [allApps, setAllApps] = useState<AppData[]>([]);
   const [allClients, setAllClients] = useState<ClientData[]>([]);
+  const [featuredCategories, setFeaturedCategories] = useState<FeaturedCategory[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
@@ -2489,6 +2710,18 @@ function AppContent() {
       setAllClients(clients.length > 0 ? clients : MOCK_CLIENTS);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'clients');
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Featured Categories listener
+  useEffect(() => {
+    const q = query(collection(db, 'featuredCategories'), orderBy('order', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FeaturedCategory));
+      setFeaturedCategories(cats);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'featuredCategories');
     });
     return () => unsubscribe();
   }, []);
@@ -2596,6 +2829,35 @@ function AppContent() {
       toast.success('Client removed successfully!');
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `clients/${clientId}`);
+    }
+  };
+
+  const handleAddFeatured = async (cat: FeaturedCategory) => {
+    try {
+      const { id, ...data } = cat;
+      await addDoc(collection(db, 'featuredCategories'), data);
+      toast.success('Featured category added');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'featuredCategories');
+    }
+  };
+
+  const handleUpdateFeatured = async (cat: FeaturedCategory) => {
+    try {
+      const { id, ...data } = cat;
+      await updateDoc(doc(db, 'featuredCategories', id), data);
+      toast.success('Featured category updated');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'featuredCategories');
+    }
+  };
+
+  const handleDeleteFeatured = async (catId: string) => {
+    try {
+      await deleteDoc(doc(db, 'featuredCategories', catId));
+      toast.success('Featured category removed');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, 'featuredCategories');
     }
   };
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -2822,6 +3084,10 @@ function AppContent() {
         onAddClient={handleAddClient}
         onUpdateClient={handleUpdateClient}
         onDeleteClient={handleDeleteClient}
+        featuredCategories={featuredCategories}
+        onAddFeatured={handleAddFeatured}
+        onUpdateFeatured={handleUpdateFeatured}
+        onDeleteFeatured={handleDeleteFeatured}
         onBack={() => navigate('/')}
       />
     );
@@ -2844,17 +3110,6 @@ function AppContent() {
             <span>aladeen<span className="text-slate-900">.app</span></span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="hidden lg:flex items-center gap-6 mr-8 border-r border-slate-100 pr-8 max-w-[400px] overflow-x-auto no-scrollbar whitespace-nowrap">
-              {CATEGORIES.map(cat => (
-                <button 
-                  key={cat.name}
-                  onClick={() => navigate(`/category/${slugify(cat.name)}`)}
-                  className="text-[11px] font-bold text-slate-400 uppercase tracking-widest hover:text-aladeen-green transition-colors flex-shrink-0"
-                >
-                  {cat.name}
-                </button>
-              ))}
-            </div>
             <button 
               onClick={() => {
                 setIsAdminAuth(false);
@@ -2869,9 +3124,32 @@ function AppContent() {
               <User className="w-5 h-5" />
               <span className="hidden sm:inline">{currentUser ? currentUser.name : 'Sign In'}</span>
             </button>
-            <button className="p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-600">
-              <Menu className="w-6 h-6" />
-            </button>
+            
+            <div className="relative group">
+              <button className="p-3 hover:bg-slate-100 rounded-2xl transition-colors text-slate-600">
+                <MoreVertical className="w-6 h-6" />
+              </button>
+              
+              <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-3xl shadow-premium border border-slate-100 py-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0 z-50">
+                <div className="px-6 py-2 mb-2">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Categories</h4>
+                </div>
+                <div className="max-h-[60vh] overflow-y-auto px-2 custom-scrollbar">
+                  {CATEGORIES.map(cat => (
+                    <button 
+                      key={cat.name}
+                      onClick={() => navigate(`/category/${slugify(cat.name)}`)}
+                      className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl hover:bg-slate-50 text-slate-600 hover:text-aladeen-green transition-all group/item"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center group-hover/item:bg-white transition-colors">
+                        <cat.icon className="w-4 h-4" />
+                      </div>
+                      <span className="font-bold text-sm">{cat.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -3181,6 +3459,36 @@ function AppContent() {
               </div>
 
               {/* Home Sections */}
+              {featuredCategories.length > 0 && (
+                <div className="px-6 mb-12">
+                  <div className="flex items-center gap-3 mb-8">
+                    <div className="w-10 h-10 bg-aladeen-green/10 rounded-xl flex items-center justify-center text-aladeen-green">
+                      <LayoutGrid className="w-6 h-6" />
+                    </div>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Featured Categories</h2>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    {featuredCategories.map(cat => {
+                      const IconComponent = (require('lucide-react') as any)[cat.icon] || LayoutGrid;
+                      return (
+                        <motion.div
+                          key={cat.id}
+                          whileHover={{ y: -5, scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => navigate(`/category/${slugify(cat.name)}`)}
+                          className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm cursor-pointer group hover:border-aladeen-green/20 transition-all text-center"
+                        >
+                          <div className={`w-12 h-12 ${cat.color} rounded-2xl mx-auto mb-3 flex items-center justify-center text-white shadow-lg shadow-current/20 group-hover:scale-110 transition-transform`}>
+                            <IconComponent className="w-6 h-6" />
+                          </div>
+                          <h3 className="font-bold text-slate-900 text-[10px] line-clamp-1">{cat.name}</h3>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <Section 
                 title="Featured Apps" 
                 apps={featuredApps} 
@@ -3276,7 +3584,6 @@ function AppContent() {
                 {[
                   { label: 'Home', path: '/' },
                   { label: 'All Apps', path: '/apps' },
-                  { label: 'Categories', path: '/' },
                   { label: 'About Us', path: '#' },
                   { label: 'Contact', path: '#' }
                 ].map(link => (

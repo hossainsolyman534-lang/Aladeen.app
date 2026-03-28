@@ -41,6 +41,14 @@ export interface ClientData {
   notes?: string;
 }
 
+export interface FeaturedCategory {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  order: number;
+}
+
 export interface CategoryData {
   name: string;
   description: string;
