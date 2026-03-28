@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useParams, Link, useLocation, Navigate } from 'react-router-dom';
 import { Toaster, toast } from 'sonner';
 import { 
   Search, 
@@ -60,6 +61,60 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MOCK_APPS, AppData, CATEGORIES, MOCK_REVIEWS, CategoryData, ClientData, MOCK_CLIENTS } from './constants';
+
+// --- Helpers ---
+const slugify = (text: string) => text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+
+// --- Route Wrappers ---
+const AppDetailRouteWrapper = ({ allApps, ...props }: any) => {
+  const { appId } = useParams();
+  const navigate = useNavigate();
+  const app = allApps.find((a: any) => a.id === appId || slugify(a.name) === appId);
+  
+  if (!app) return <Navigate to="/" />;
+  
+  return (
+    <AppDetail 
+      app={app} 
+      onBack={() => navigate(-1)} 
+      onAppClick={(nextApp: any) => navigate(`/${slugify(nextApp.name)}`)}
+      apps={allApps}
+      isInstalled={props.installedApps.includes(app.id)}
+      onInstall={() => props.startDownload(app.id)}
+      onUninstall={() => props.handleUninstall(app.id)}
+      userReview={props.userReviews[app.id] || null}
+      onRate={(rating: number, comment: string) => {
+        if (!props.currentUser) {
+          props.setIsAuthModalOpen(true);
+          toast.info('Please login to leave a review');
+          return;
+        }
+        props.handleRate(app.id, rating, comment);
+      }}
+      downloadProgress={props.downloadingApps[app.id]}
+      isWishlisted={props.wishlist.includes(app.id)}
+      onToggleWishlist={() => props.toggleWishlist(app.id)}
+    />
+  );
+};
+
+const CategoryDetailRouteWrapper = ({ allApps, downloadingApps }: any) => {
+  const { categoryName } = useParams();
+  const navigate = useNavigate();
+  const category = CATEGORIES.find(c => slugify(c.name) === categoryName);
+  
+  if (!category) return <Navigate to="/" />;
+  
+  return (
+    <CategoryDetail 
+      category={category}
+      onBack={() => navigate(-1)}
+      apps={allApps}
+      onAppClick={(app: any) => navigate(`/${slugify(app.name)}`)}
+      downloadingApps={downloadingApps}
+    />
+  );
+};
 
 // --- Components ---
 
@@ -1285,6 +1340,8 @@ const AdminDashboard = ({
   
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientData | null>(null);
+  const [appToDelete, setAppToDelete] = useState<AppData | null>(null);
+  const [clientToDelete, setClientToDelete] = useState<ClientData | null>(null);
   const [clientSortField, setClientSortField] = useState<'onBoardDate' | 'notes'>('onBoardDate');
   const [clientSortOrder, setClientSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showNotesColumn, setShowNotesColumn] = useState(true);
@@ -2112,31 +2169,7 @@ const AdminDashboard = ({
                               <Edit className="w-5 h-5" />
                             </button>
                             <button 
-                              onClick={() => {
-                                toast.custom((t) => (
-                                  <div className="bg-white p-6 rounded-3xl shadow-2xl border border-slate-100 max-w-sm">
-                                    <h3 className="text-lg font-bold text-slate-900 mb-2">Remove Client?</h3>
-                                    <p className="text-sm text-slate-500 mb-6">Are you sure you want to remove <span className="font-bold text-slate-900">{client.name}</span>?</p>
-                                    <div className="flex gap-3">
-                                      <button 
-                                        onClick={() => {
-                                          onDeleteClient(client.id);
-                                          toast.dismiss(t);
-                                        }}
-                                        className="flex-1 bg-red-500 text-white py-2 rounded-xl font-bold hover:bg-red-600 transition-colors"
-                                      >
-                                        Remove
-                                      </button>
-                                      <button 
-                                        onClick={() => toast.dismiss(t)}
-                                        className="flex-1 bg-slate-100 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-200 transition-all"
-                                      >
-                                        Cancel
-                                      </button>
-                                    </div>
-                                  </div>
-                                ));
-                              }}
+                              onClick={() => setClientToDelete(client)}
                               className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
                             >
                               <Trash2 className="w-5 h-5" />
@@ -2312,31 +2345,7 @@ const AdminDashboard = ({
                             <Edit className="w-5 h-5" />
                           </button>
                           <button 
-                            onClick={() => {
-                              toast.custom((t) => (
-                                <div className="bg-white p-6 rounded-3xl shadow-2xl border border-slate-100 max-w-sm">
-                                  <h3 className="text-lg font-bold text-slate-900 mb-2">Delete App?</h3>
-                                  <p className="text-sm text-slate-500 mb-6">Are you sure you want to delete <span className="font-bold text-slate-900">{app.name}</span>? This action cannot be undone.</p>
-                                  <div className="flex gap-3">
-                                    <button 
-                                      onClick={() => {
-                                        onDeleteApp(app.id);
-                                        toast.dismiss(t);
-                                      }}
-                                      className="flex-1 bg-red-500 text-white py-2 rounded-xl font-bold hover:bg-red-600 transition-colors"
-                                    >
-                                      Delete
-                                    </button>
-                                    <button 
-                                      onClick={() => toast.dismiss(t)}
-                                      className="flex-1 bg-slate-100 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-200 transition-colors"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              ));
-                            }}
+                            onClick={() => setAppToDelete(app)}
                             className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
                             title="Delete App"
                           >
@@ -2352,6 +2361,80 @@ const AdminDashboard = ({
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {appToDelete && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border border-slate-100"
+            >
+              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mb-8 mx-auto">
+                <Trash2 className="w-10 h-10" />
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 text-center mb-3 tracking-tight">Delete App?</h3>
+              <p className="text-slate-500 text-center text-base mb-10 leading-relaxed">
+                Are you sure you want to delete <span className="font-bold text-slate-900">{appToDelete.name}</span>? This action cannot be undone and will remove the app from the store.
+              </p>
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => {
+                    onDeleteApp(appToDelete.id);
+                    setAppToDelete(null);
+                  }}
+                  className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-bold hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all active:scale-[0.98]"
+                >
+                  Delete App
+                </button>
+                <button 
+                  onClick={() => setAppToDelete(null)}
+                  className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all active:scale-[0.98]"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {clientToDelete && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border border-slate-100"
+            >
+              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mb-8 mx-auto">
+                <Trash2 className="w-10 h-10" />
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 text-center mb-3 tracking-tight">Remove Client?</h3>
+              <p className="text-slate-500 text-center text-base mb-10 leading-relaxed">
+                Are you sure you want to remove <span className="font-bold text-slate-900">{clientToDelete.name}</span> from your client list?
+              </p>
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => {
+                    onDeleteClient(clientToDelete.id);
+                    setClientToDelete(null);
+                  }}
+                  className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-bold hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all active:scale-[0.98]"
+                >
+                  Remove
+                </button>
+                <button 
+                  onClick={() => setClientToDelete(null)}
+                  className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all active:scale-[0.98]"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -2359,6 +2442,16 @@ const AdminDashboard = ({
 // --- Main App ---
 
 export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  );
+}
+
+function AppContent() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [allApps, setAllApps] = useState<AppData[]>(() => {
     const saved = localStorage.getItem('aladeen_all_apps');
     return saved ? JSON.parse(saved) : MOCK_APPS;
@@ -2372,8 +2465,6 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAdminAuth, setIsAdminAuth] = useState(false);
 
-  const [view, setView] = useState<'home' | 'listing' | 'profile' | 'admin'>('home');
-
   const handleLogin = (user: any) => {
     setCurrentUser(user);
     localStorage.setItem('aladeen_user', JSON.stringify(user));
@@ -2383,7 +2474,7 @@ export default function App() {
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('aladeen_user');
-    setView('home');
+    navigate('/');
     toast.success('Logged out successfully');
   };
 
@@ -2433,9 +2524,7 @@ export default function App() {
     localStorage.setItem('aladeen_clients', JSON.stringify(updated));
     toast.success('Client removed successfully!');
   };
-  const [selectedApp, setSelectedApp] = useState<AppData | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedCategoryDetail, setSelectedCategoryDetail] = useState<CategoryData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -2587,7 +2676,35 @@ export default function App() {
       .slice(0, 4);
   }, [allApps]);
 
-  if (view === 'admin') {
+  if (location.pathname.startsWith('/admin')) {
+    if (!currentUser || currentUser.role !== 'admin') {
+      return (
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+          <div className="max-w-md w-full bg-white rounded-[2.5rem] p-10 shadow-2xl border border-slate-100 text-center">
+            <div className="w-20 h-20 bg-aladeen-green/10 rounded-3xl flex items-center justify-center text-aladeen-green mx-auto mb-6">
+              <Lock className="w-10 h-10" />
+            </div>
+            <h1 className="text-3xl font-display font-black text-slate-900 mb-4 tracking-tighter">Admin Access</h1>
+            <p className="text-slate-500 mb-8 font-medium">Please sign in with your administrator credentials to access the dashboard.</p>
+            <button 
+              onClick={() => {
+                setIsAdminAuth(true);
+                setIsAuthModalOpen(true);
+              }}
+              className="w-full bg-aladeen-green text-white py-4 rounded-2xl font-black shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all"
+            >
+              Admin Login
+            </button>
+            <button 
+              onClick={() => navigate('/')}
+              className="mt-4 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              Back to Home
+            </button>
+          </div>
+        </div>
+      );
+    }
     return (
       <AdminDashboard 
         apps={allApps}
@@ -2598,7 +2715,7 @@ export default function App() {
         onAddClient={handleAddClient}
         onUpdateClient={handleUpdateClient}
         onDeleteClient={handleDeleteClient}
-        onBack={() => setView('home')}
+        onBack={() => navigate('/')}
       />
     );
   }
@@ -2612,7 +2729,7 @@ export default function App() {
         <div className="max-w-5xl mx-auto px-6 flex items-center justify-between">
           <div 
             className="text-3xl font-display font-black text-aladeen-green cursor-pointer tracking-tighter flex items-center gap-2"
-            onClick={() => { setView('home'); setSelectedCategory(null); setSearchQuery(''); }}
+            onClick={() => { navigate('/'); setSelectedCategory(null); setSearchQuery(''); }}
           >
             <div className="w-10 h-10 bg-aladeen-green rounded-xl flex items-center justify-center text-white shadow-lg shadow-aladeen-green/20">
               <ShoppingBag className="w-6 h-6" />
@@ -2623,10 +2740,10 @@ export default function App() {
             <button 
               onClick={() => {
                 setIsAdminAuth(false);
-                currentUser ? setView('profile') : setIsAuthModalOpen(true);
+                currentUser ? navigate('/profile') : setIsAuthModalOpen(true);
               }}
               className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all ${
-                view === 'profile' 
+                location.pathname === '/profile' 
                   ? 'text-aladeen-green bg-aladeen-green/10 shadow-sm' 
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
@@ -2642,366 +2759,387 @@ export default function App() {
       </header>
 
       <main className="max-w-4xl mx-auto pb-20">
-        {view === 'profile' ? (
-          <UserProfile 
-            installedApps={allApps.filter(app => installedApps.includes(app.id))}
-            wishlistApps={allApps.filter(app => wishlist.includes(app.id))}
-            onAppClick={setSelectedApp}
-            onBack={() => setView('home')}
-            onAdminClick={() => setView('admin')}
-            downloadingApps={downloadingApps}
-            currentUser={currentUser}
-            onLogout={handleLogout}
-            onLoginClick={() => setIsAuthModalOpen(true)}
-          />
-        ) : view === 'home' ? (
-          <>
-            {/* Hero Section */}
-            <section className="relative px-6 pt-24 pb-32 overflow-hidden">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10">
-                <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-aladeen-green/5 rounded-full blur-[120px] animate-pulse" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-aladeen-accent/5 rounded-full blur-[120px] animate-pulse" />
+        <Routes>
+          <Route path="/profile" element={
+            <UserProfile 
+              installedApps={allApps.filter(app => installedApps.includes(app.id))}
+              wishlistApps={allApps.filter(app => wishlist.includes(app.id))}
+              onAppClick={(app) => navigate(`/${slugify(app.name)}`)}
+              onBack={() => navigate('/')}
+              onAdminClick={() => navigate('/admin')}
+              downloadingApps={downloadingApps}
+              currentUser={currentUser}
+              onLogout={handleLogout}
+              onLoginClick={() => setIsAuthModalOpen(true)}
+            />
+          } />
+          <Route path="/apps" element={
+            <div className="px-6 py-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900">
+                    {selectedCategory || (searchQuery ? `Search: ${searchQuery}` : 'All Apps')}
+                  </h2>
+                  <p className="text-sm text-slate-500">{filteredApps.length} apps found</p>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                    <Filter className="w-4 h-4 text-slate-400" />
+                    <select 
+                      className="bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                      value={selectedCategory || ''}
+                      onChange={(e) => setSelectedCategory(e.target.value || null)}
+                    >
+                      <option value="">All Categories</option>
+                      {CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                    <ArrowUpDown className="w-4 h-4 text-slate-400" />
+                    <select 
+                      className="bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as any)}
+                    >
+                      <option value="popular">Popular</option>
+                      <option value="latest">Latest</option>
+                      <option value="rating">Rating</option>
+                      <option value="downloads">Downloads</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              {/* Floating Decorative Elements */}
-              <motion.div 
-                animate={{ y: [0, -20, 0], rotate: [-12, -8, -12] }}
-                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-20 left-[5%] w-20 h-20 bg-white rounded-3xl shadow-2xl flex items-center justify-center text-aladeen-green hidden lg:flex border border-slate-50"
-              >
-                <ShoppingBag className="w-10 h-10" />
-              </motion.div>
-              <motion.div 
-                animate={{ y: [0, 20, 0], rotate: [12, 15, 12] }}
-                transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute top-40 right-[5%] w-24 h-24 bg-white rounded-[2rem] shadow-2xl flex items-center justify-center text-aladeen-accent hidden lg:flex border border-slate-50"
-              >
-                <Smartphone className="w-12 h-12" />
-              </motion.div>
-              <motion.div 
-                animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
-                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute bottom-20 left-[15%] w-32 h-32 bg-aladeen-green/10 rounded-full blur-2xl hidden lg:block"
-              />
-
-              <div className="max-w-5xl mx-auto text-center relative z-10">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="inline-flex items-center gap-2 px-5 py-2 bg-aladeen-green/10 text-aladeen-green rounded-full text-[11px] font-bold uppercase tracking-[0.2em] mb-10 shadow-sm border border-aladeen-green/10"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>The Future of E-commerce in Bangladesh</span>
-                </motion.div>
-                
-                <motion.h1 
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                  className="text-6xl md:text-8xl font-display font-extrabold text-slate-900 mb-10 tracking-tight leading-[1.02]"
-                >
-                  Discover the Best <br />
-                  <span className="text-gradient">Shopping Apps</span>
-                </motion.h1>
-                
-                <motion.p 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.8 }}
-                  className="text-slate-500 text-xl md:text-2xl mb-14 max-w-3xl mx-auto leading-relaxed font-medium"
-                >
-                  Access a curated collection of verified, high-performance Android applications for the ultimate shopping experience in Bangladesh.
-                </motion.p>
-
-                <div className="relative max-w-2xl mx-auto mb-24 z-30">
-                  <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
-                    <Search className="w-6 h-6 text-slate-300" />
-                  </div>
-                  <input 
-                    type="text" 
-                    placeholder="Search for apps (e.g. Daraz, Chaldal)" 
-                    className="w-full pl-16 pr-16 py-6 bg-white border border-slate-100 rounded-[2.5rem] outline-none focus:ring-8 focus:ring-aladeen-green/5 focus:border-aladeen-green transition-all text-slate-700 shadow-premium text-xl font-medium"
-                    value={searchQuery}
-                    onFocus={() => setShowSuggestions(true)}
-                    onBlur={() => setTimeout(() => {
-                      setShowSuggestions(false);
-                      setSelectedIndex(-1);
-                    }, 200)}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setSelectedIndex(-1);
-                      if (e.target.value) {
-                        setShowSuggestions(true);
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        setSelectedIndex(prev => (prev < suggestions.length ? prev + 1 : prev));
-                      } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        setSelectedIndex(prev => (prev > -1 ? prev - 1 : prev));
-                      } else if (e.key === 'Enter') {
-                        if (selectedIndex === -1) {
-                          setView('listing');
-                          setShowSuggestions(false);
-                        } else if (selectedIndex === suggestions.length) {
-                          setView('listing');
-                          setShowSuggestions(false);
-                        } else {
-                          setSelectedApp(suggestions[selectedIndex]);
-                          setShowSuggestions(false);
-                        }
-                      } else if (e.key === 'Escape') {
-                        setShowSuggestions(false);
-                        setSelectedIndex(-1);
-                      }
-                    }}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+                {filteredApps.map(app => (
+                  <AppCard 
+                    key={app.id} 
+                    app={app} 
+                    onClick={() => navigate(`/${slugify(app.name)}`)} 
+                    highlight={searchQuery} 
+                    downloadProgress={downloadingApps[app.id]}
                   />
-
-                  {searchQuery && (
-                    <button 
-                      onClick={() => {
-                        setSearchQuery('');
-                        setSelectedIndex(-1);
-                      }}
-                      className="absolute inset-y-0 right-6 flex items-center text-slate-300 hover:text-slate-500 transition-colors"
-                    >
-                      <X className="w-6 h-6" />
-                    </button>
-                  )}
-
-                  <AnimatePresence>
-                    {showSuggestions && suggestions.length > 0 && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 15 }}
-                        className="absolute top-full left-0 right-0 mt-6 bg-white rounded-[2.5rem] shadow-premium border border-slate-100 overflow-hidden z-50 py-3"
-                      >
-                        {suggestions.map((app, index) => (
-                          <button
-                            key={app.id}
-                            onClick={() => {
-                              setSelectedApp(app);
-                              setShowSuggestions(false);
-                            }}
-                            onMouseEnter={() => setSelectedIndex(index)}
-                            className={`w-full flex items-center gap-5 px-8 py-5 transition-colors text-left ${
-                              selectedIndex === index ? 'bg-slate-50' : 'hover:bg-slate-50'
-                            }`}
-                          >
-                            <img src={app.icon} alt={app.name} className="w-14 h-14 rounded-2xl object-cover shadow-sm" referrerPolicy="no-referrer" />
-                            <div className="flex-1">
-                              <div className="text-lg font-bold text-slate-900 leading-tight">
-                                <HighlightedText text={app.name} highlight={searchQuery} />
-                              </div>
-                              <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
-                                <HighlightedText text={app.developer} highlight={searchQuery} />
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5 px-4 py-1.5 bg-aladeen-green/5 rounded-full text-aladeen-green">
-                              <Star className="w-3.5 h-3.5 fill-current" />
-                              <span className="text-sm font-bold">{app.rating}</span>
-                            </div>
-                          </button>
-                        ))}
-                        <button 
-                          onClick={() => {
-                            setView('listing');
-                            setShowSuggestions(false);
-                          }}
-                          onMouseEnter={() => setSelectedIndex(suggestions.length)}
-                          className={`w-full p-6 text-aladeen-green text-sm font-bold uppercase tracking-[0.2em] transition-colors border-t border-slate-50 ${
-                            selectedIndex === suggestions.length ? 'bg-slate-50' : 'bg-white hover:bg-slate-50'
-                          }`}
-                        >
-                          See all results for "{searchQuery}"
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Categories Grid */}
-                <div className="grid grid-cols-4 sm:grid-cols-7 gap-6 mb-8">
-                  {CATEGORIES.map(cat => (
-                    <motion.div 
-                      key={cat.name}
-                      whileHover={{ y: -8 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setSelectedCategoryDetail(cat)}
-                      className="flex flex-col items-center gap-4 cursor-pointer group"
-                    >
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] bg-white flex items-center justify-center text-slate-400 group-hover:bg-aladeen-green group-hover:text-white transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-aladeen-green/20 border border-slate-100 group-hover:border-transparent">
-                        <CategoryIcon icon={cat.icon} />
-                      </div>
-                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-aladeen-green transition-colors">{cat.name}</span>
-                    </motion.div>
-                  ))}
-                </div>
+                ))}
               </div>
-            </section>
 
-            {/* Why Aladeen Section */}
-            <section className="px-6 py-32 bg-slate-50/30">
-              <div className="max-w-6xl mx-auto">
-                <div className="text-center mb-20">
-                  <h2 className="text-4xl md:text-5xl font-display font-extrabold text-slate-900 mb-6 tracking-tight">Why Choose Aladeen?</h2>
-                  <p className="text-slate-500 text-lg max-w-2xl mx-auto font-medium">We provide the most secure and efficient way to access e-commerce apps in Bangladesh.</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                  {[
-                    { title: 'Verified APKs', desc: 'Every app is manually checked for security and performance.', icon: ShieldCheck },
-                    { title: 'Fast Delivery', desc: 'Direct download links with high-speed servers for instant access.', icon: Zap },
-                    { title: 'Curated List', desc: 'Only the top-rated and most reliable shopping apps are listed.', icon: Sparkles },
-                  ].map((feature, i) => (
-                    <div key={i} className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 hover:shadow-premium transition-all group">
-                      <div className="w-16 h-16 bg-aladeen-green/10 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-aladeen-green group-hover:text-white transition-colors">
-                        <feature.icon className="w-8 h-8 text-aladeen-green group-hover:text-white" />
-                      </div>
-                      <h3 className="text-2xl font-display font-bold text-slate-900 mb-4">{feature.title}</h3>
-                      <p className="text-slate-500 text-base leading-relaxed font-medium">{feature.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            {/* Featured Category */}
-            <div className="px-6 mb-20">
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="bg-aladeen-green rounded-[3rem] p-10 md:p-16 text-white relative overflow-hidden shadow-2xl shadow-aladeen-green/20"
-              >
-                <div className="relative z-10 max-w-lg">
-                  <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest mb-8 border border-white/10">
-                    <Sparkles className="w-4 h-4" />
-                    Featured Category
+              {filteredApps.length === 0 && (
+                <div className="text-center py-20">
+                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Search className="w-10 h-10 text-slate-200" />
                   </div>
-                  <h2 className="text-4xl md:text-6xl font-display font-extrabold mb-6 leading-tight tracking-tight">Fresh Groceries, <br />Delivered Fast.</h2>
-                  <p className="text-white/90 text-lg md:text-xl mb-10 leading-relaxed font-medium">
-                    Discover the best grocery apps in Bangladesh. From fresh produce to daily essentials, get everything delivered to your doorstep in minutes.
-                  </p>
+                  <h3 className="text-lg font-bold text-slate-900">No apps found</h3>
+                  <p className="text-slate-500 text-sm">Try adjusting your search or filters</p>
                   <button 
-                    onClick={() => setSelectedCategoryDetail(CATEGORIES.find(c => c.name === 'Grocery') || null)}
-                    className="bg-white text-aladeen-green px-10 py-5 rounded-2xl font-bold text-base hover:bg-slate-50 transition-all active:scale-95 shadow-xl"
+                    onClick={() => { setSelectedCategory(null); setSearchQuery(''); }}
+                    className="mt-6 text-aladeen-green font-bold hover:underline"
                   >
-                    Explore Grocery Apps
+                    Clear all filters
                   </button>
                 </div>
-                
-                {/* Decorative Elements */}
-                <div className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
-                <div className="absolute bottom-0 right-0 translate-y-1/4 translate-x-1/4 w-[30rem] h-[30rem] bg-aladeen-dark/20 rounded-full blur-3xl" />
-                <Utensils className="absolute bottom-[-40px] right-[-40px] w-80 h-80 text-white/5 -rotate-12" />
-              </motion.div>
+              )}
             </div>
-
-            {/* Home Sections */}
-            <Section 
-              title="Featured Apps" 
-              apps={featuredApps} 
-              onAppClick={setSelectedApp} 
-              onViewAll={() => setView('listing')}
-              icon={Star} 
-              downloadingApps={downloadingApps}
-            />
-            <Section 
-              title="Recommended for You" 
-              apps={recommendedApps} 
-              onAppClick={setSelectedApp} 
-              onViewAll={() => setView('listing')}
-              icon={Sparkles} 
-              downloadingApps={downloadingApps}
-            />
-            <Section 
-              title="Trending Now" 
-              apps={trendingApps} 
-              onAppClick={setSelectedApp} 
-              onViewAll={() => { setView('listing'); setSortBy('popular'); }}
-              icon={TrendingUp} 
-              downloadingApps={downloadingApps}
-            />
-            <Section 
-              title="Newly Added" 
-              apps={newlyAddedApps} 
-              onAppClick={setSelectedApp} 
-              onViewAll={() => { setView('listing'); setSortBy('latest'); }}
-              icon={Plus} 
-              downloadingApps={downloadingApps}
-            />
-          </>
-        ) : (
-          <div className="px-6 py-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900">
-                  {selectedCategory || (searchQuery ? `Search: ${searchQuery}` : 'All Apps')}
-                </h2>
-                <p className="text-sm text-slate-500">{filteredApps.length} apps found</p>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-                  <Filter className="w-4 h-4 text-slate-400" />
-                  <select 
-                    className="bg-transparent text-sm font-semibold text-slate-700 outline-none"
-                    value={selectedCategory || ''}
-                    onChange={(e) => setSelectedCategory(e.target.value || null)}
-                  >
-                    <option value="">All Categories</option>
-                    {CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
-                  </select>
+          } />
+          <Route path="/" element={
+            <>
+              {/* Hero Section */}
+              <section className="relative px-6 pt-24 pb-32 overflow-hidden">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10">
+                  <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-aladeen-green/5 rounded-full blur-[120px] animate-pulse" />
+                  <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-aladeen-accent/5 rounded-full blur-[120px] animate-pulse" />
                 </div>
-                
-                <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-                  <ArrowUpDown className="w-4 h-4 text-slate-400" />
-                  <select 
-                    className="bg-transparent text-sm font-semibold text-slate-700 outline-none"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as any)}
-                  >
-                    <option value="popular">Popular</option>
-                    <option value="latest">Latest</option>
-                    <option value="rating">Rating</option>
-                    <option value="downloads">Downloads</option>
-                  </select>
-                </div>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-              {filteredApps.map(app => (
-                <AppCard 
-                  key={app.id} 
-                  app={app} 
-                  onClick={() => setSelectedApp(app)} 
-                  highlight={searchQuery} 
-                  downloadProgress={downloadingApps[app.id]}
-                />
-              ))}
-            </div>
-
-            {filteredApps.length === 0 && (
-              <div className="text-center py-20">
-                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="w-10 h-10 text-slate-200" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900">No apps found</h3>
-                <p className="text-slate-500 text-sm">Try adjusting your search or filters</p>
-                <button 
-                  onClick={() => { setSelectedCategory(null); setSearchQuery(''); }}
-                  className="mt-6 text-aladeen-green font-bold hover:underline"
+                {/* Floating Decorative Elements */}
+                <motion.div 
+                  animate={{ y: [0, -20, 0], rotate: [-12, -8, -12] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute top-20 left-[5%] w-20 h-20 bg-white rounded-3xl shadow-2xl flex items-center justify-center text-aladeen-green hidden lg:flex border border-slate-50"
                 >
-                  Clear all filters
-                </button>
+                  <ShoppingBag className="w-10 h-10" />
+                </motion.div>
+                <motion.div 
+                  animate={{ y: [0, 20, 0], rotate: [12, 15, 12] }}
+                  transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                  className="absolute top-40 right-[5%] w-24 h-24 bg-white rounded-[2rem] shadow-2xl flex items-center justify-center text-aladeen-accent hidden lg:flex border border-slate-50"
+                >
+                  <Smartphone className="w-12 h-12" />
+                </motion.div>
+                <motion.div 
+                  animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+                  transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute bottom-20 left-[15%] w-32 h-32 bg-aladeen-green/10 rounded-full blur-2xl hidden lg:block"
+                />
+
+                <div className="max-w-5xl mx-auto text-center relative z-10">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="inline-flex items-center gap-2 px-5 py-2 bg-aladeen-green/10 text-aladeen-green rounded-full text-[11px] font-bold uppercase tracking-[0.2em] mb-10 shadow-sm border border-aladeen-green/10"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>The Future of E-commerce in Bangladesh</span>
+                  </motion.div>
+                  
+                  <motion.h1 
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                    className="text-6xl md:text-8xl font-display font-extrabold text-slate-900 mb-10 tracking-tight leading-[1.02]"
+                  >
+                    Discover the Best <br />
+                    <span className="text-gradient">Shopping Apps</span>
+                  </motion.h1>
+                  
+                  <motion.p 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.8 }}
+                    className="text-slate-500 text-xl md:text-2xl mb-14 max-w-3xl mx-auto leading-relaxed font-medium"
+                  >
+                    Access a curated collection of verified, high-performance Android applications for the ultimate shopping experience in Bangladesh.
+                  </motion.p>
+
+                  <div className="relative max-w-2xl mx-auto mb-24 z-30">
+                    <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+                      <Search className="w-6 h-6 text-slate-300" />
+                    </div>
+                    <input 
+                      type="text" 
+                      placeholder="Search for apps (e.g. Daraz, Chaldal)" 
+                      className="w-full pl-16 pr-16 py-6 bg-white border border-slate-100 rounded-[2.5rem] outline-none focus:ring-8 focus:ring-aladeen-green/5 focus:border-aladeen-green transition-all text-slate-700 shadow-premium text-xl font-medium"
+                      value={searchQuery}
+                      onFocus={() => setShowSuggestions(true)}
+                      onBlur={() => setTimeout(() => {
+                        setShowSuggestions(false);
+                        setSelectedIndex(-1);
+                      }, 200)}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setSelectedIndex(-1);
+                        if (e.target.value) {
+                          setShowSuggestions(true);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          setSelectedIndex(prev => (prev < suggestions.length ? prev + 1 : prev));
+                        } else if (e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          setSelectedIndex(prev => (prev > -1 ? prev - 1 : prev));
+                        } else if (e.key === 'Enter') {
+                          if (selectedIndex === -1) {
+                            navigate('/apps');
+                            setShowSuggestions(false);
+                          } else if (selectedIndex === suggestions.length) {
+                            navigate('/apps');
+                            setShowSuggestions(false);
+                          } else {
+                            navigate(`/${slugify(suggestions[selectedIndex].name)}`);
+                            setShowSuggestions(false);
+                          }
+                        } else if (e.key === 'Escape') {
+                          setShowSuggestions(false);
+                          setSelectedIndex(-1);
+                        }
+                      }}
+                    />
+
+                    {searchQuery && (
+                      <button 
+                        onClick={() => {
+                          setSearchQuery('');
+                          setSelectedIndex(-1);
+                        }}
+                        className="absolute inset-y-0 right-6 flex items-center text-slate-300 hover:text-slate-500 transition-colors"
+                      >
+                        <X className="w-6 h-6" />
+                      </button>
+                    )}
+
+                    <AnimatePresence>
+                      {showSuggestions && suggestions.length > 0 && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 15 }}
+                          className="absolute top-full left-0 right-0 mt-6 bg-white rounded-[2.5rem] shadow-premium border border-slate-100 overflow-hidden z-50 py-3"
+                        >
+                          {suggestions.map((app, index) => (
+                            <button
+                              key={app.id}
+                              onClick={() => {
+                                navigate(`/${slugify(app.name)}`);
+                                setShowSuggestions(false);
+                              }}
+                              onMouseEnter={() => setSelectedIndex(index)}
+                              className={`w-full flex items-center gap-5 px-8 py-5 transition-colors text-left ${
+                                selectedIndex === index ? 'bg-slate-50' : 'hover:bg-slate-50'
+                              }`}
+                            >
+                              <img src={app.icon} alt={app.name} className="w-14 h-14 rounded-2xl object-cover shadow-sm" referrerPolicy="no-referrer" />
+                              <div className="flex-1">
+                                <div className="text-lg font-bold text-slate-900 leading-tight">
+                                  <HighlightedText text={app.name} highlight={searchQuery} />
+                                </div>
+                                <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                  <HighlightedText text={app.developer} highlight={searchQuery} />
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 px-4 py-1.5 bg-aladeen-green/5 rounded-full text-aladeen-green">
+                                <Star className="w-3.5 h-3.5 fill-current" />
+                                <span className="text-sm font-bold">{app.rating}</span>
+                              </div>
+                            </button>
+                          ))}
+                          <button 
+                            onClick={() => {
+                              navigate('/apps');
+                              setShowSuggestions(false);
+                            }}
+                            onMouseEnter={() => setSelectedIndex(suggestions.length)}
+                            className={`w-full p-6 text-aladeen-green text-sm font-bold uppercase tracking-[0.2em] transition-colors border-t border-slate-50 ${
+                              selectedIndex === suggestions.length ? 'bg-slate-50' : 'bg-white hover:bg-slate-50'
+                            }`}
+                          >
+                            See all results for "{searchQuery}"
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Categories Grid */}
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-6 mb-8">
+                    {CATEGORIES.map(cat => (
+                      <motion.div 
+                        key={cat.name}
+                        whileHover={{ y: -8 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => navigate(`/category/${slugify(cat.name)}`)}
+                        className="flex flex-col items-center gap-4 cursor-pointer group"
+                      >
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] bg-white flex items-center justify-center text-slate-400 group-hover:bg-aladeen-green group-hover:text-white transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-aladeen-green/20 border border-slate-100 group-hover:border-transparent">
+                          <CategoryIcon icon={cat.icon} />
+                        </div>
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-aladeen-green transition-colors">{cat.name}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* Why Aladeen Section */}
+              <section className="px-6 py-32 bg-slate-50/30">
+                <div className="max-w-6xl mx-auto">
+                  <div className="text-center mb-20">
+                    <h2 className="text-4xl md:text-5xl font-display font-extrabold text-slate-900 mb-6 tracking-tight">Why Choose Aladeen?</h2>
+                    <p className="text-slate-500 text-lg max-w-2xl mx-auto font-medium">We provide the most secure and efficient way to access e-commerce apps in Bangladesh.</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                    {[
+                      { title: 'Verified APKs', desc: 'Every app is manually checked for security and performance.', icon: ShieldCheck },
+                      { title: 'Fast Delivery', desc: 'Direct download links with high-speed servers for instant access.', icon: Zap },
+                      { title: 'Curated List', desc: 'Only the top-rated and most reliable shopping apps are listed.', icon: Sparkles },
+                    ].map((feature, i) => (
+                      <div key={i} className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 hover:shadow-premium transition-all group">
+                        <div className="w-16 h-16 bg-aladeen-green/10 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-aladeen-green group-hover:text-white transition-colors">
+                          <feature.icon className="w-8 h-8 text-aladeen-green group-hover:text-white" />
+                        </div>
+                        <h3 className="text-2xl font-display font-bold text-slate-900 mb-4">{feature.title}</h3>
+                        <p className="text-slate-500 text-base leading-relaxed font-medium">{feature.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* Featured Category */}
+              <div className="px-6 mb-20">
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  className="bg-aladeen-green rounded-[3rem] p-10 md:p-16 text-white relative overflow-hidden shadow-2xl shadow-aladeen-green/20"
+                >
+                  <div className="relative z-10 max-w-lg">
+                    <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest mb-8 border border-white/10">
+                      <Sparkles className="w-4 h-4" />
+                      Featured Category
+                    </div>
+                    <h2 className="text-4xl md:text-6xl font-display font-extrabold mb-6 leading-tight tracking-tight">Fresh Groceries, <br />Delivered Fast.</h2>
+                    <p className="text-white/90 text-lg md:text-xl mb-10 leading-relaxed font-medium">
+                      Discover the best grocery apps in Bangladesh. From fresh produce to daily essentials, get everything delivered to your doorstep in minutes.
+                    </p>
+                    <button 
+                      onClick={() => navigate(`/category/grocery`)}
+                      className="bg-white text-aladeen-green px-10 py-5 rounded-2xl font-bold text-base hover:bg-slate-50 transition-all active:scale-95 shadow-xl"
+                    >
+                      Explore Grocery Apps
+                    </button>
+                  </div>
+                  
+                  {/* Decorative Elements */}
+                  <div className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
+                  <div className="absolute bottom-0 right-0 translate-y-1/4 translate-x-1/4 w-[30rem] h-[30rem] bg-aladeen-dark/20 rounded-full blur-3xl" />
+                  <Utensils className="absolute bottom-[-40px] right-[-40px] w-80 h-80 text-white/5 -rotate-12" />
+                </motion.div>
               </div>
-            )}
-          </div>
-        )}
+
+              {/* Home Sections */}
+              <Section 
+                title="Featured Apps" 
+                apps={featuredApps} 
+                onAppClick={(app) => navigate(`/${slugify(app.name)}`)} 
+                onViewAll={() => navigate('/apps')}
+                icon={Star} 
+                downloadingApps={downloadingApps}
+              />
+              <Section 
+                title="Recommended for You" 
+                apps={recommendedApps} 
+                onAppClick={(app) => navigate(`/${slugify(app.name)}`)} 
+                onViewAll={() => navigate('/apps')}
+                icon={Sparkles} 
+                downloadingApps={downloadingApps}
+              />
+              <Section 
+                title="Trending Now" 
+                apps={trendingApps} 
+                onAppClick={(app) => navigate(`/${slugify(app.name)}`)} 
+                onViewAll={() => { navigate('/apps'); setSortBy('popular'); }}
+                icon={TrendingUp} 
+                downloadingApps={downloadingApps}
+              />
+              <Section 
+                title="Newly Added" 
+                apps={newlyAddedApps} 
+                onAppClick={(app) => navigate(`/${slugify(app.name)}`)} 
+                onViewAll={() => { navigate('/apps'); setSortBy('latest'); }}
+                icon={Plus} 
+                downloadingApps={downloadingApps}
+              />
+            </>
+          } />
+          <Route path="/category/:categoryName" element={<CategoryDetailRouteWrapper 
+            allApps={allApps}
+            downloadingApps={downloadingApps}
+          />} />
+          <Route path="/:appId" element={<AppDetailRouteWrapper 
+            allApps={allApps}
+            installedApps={installedApps}
+            startDownload={startDownload}
+            handleUninstall={handleUninstall}
+            userReviews={userReviews}
+            currentUser={currentUser}
+            setIsAuthModalOpen={setIsAuthModalOpen}
+            handleRate={handleRate}
+            downloadingApps={downloadingApps}
+            wishlist={wishlist}
+            toggleWishlist={toggleWishlist}
+          />} />
+        </Routes>
       </main>
 
       <footer className="bg-slate-950 text-white py-24 px-6 relative overflow-hidden">
@@ -3013,7 +3151,7 @@ export default function App() {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-20">
             <div className="col-span-1 md:col-span-2">
-              <div className="text-4xl font-display font-black text-aladeen-green mb-8 tracking-tighter flex items-center gap-3">
+              <div className="text-4xl font-display font-black text-aladeen-green mb-8 tracking-tighter flex items-center gap-3" onClick={() => navigate('/')}>
                 <div className="w-12 h-12 bg-aladeen-green rounded-2xl flex items-center justify-center text-white shadow-lg shadow-aladeen-green/20">
                   <ShoppingBag className="w-7 h-7" />
                 </div>
@@ -3042,9 +3180,20 @@ export default function App() {
             <div>
               <h4 className="text-xs font-black uppercase tracking-[0.2em] mb-8 text-white/50">Quick Links</h4>
               <ul className="space-y-5">
-                {['Home', 'All Apps', 'Categories', 'About Us', 'Contact'].map(link => (
-                  <li key={link}>
-                    <a href="#" className="text-slate-400 hover:text-aladeen-green transition-colors font-bold text-lg">{link}</a>
+                {[
+                  { label: 'Home', path: '/' },
+                  { label: 'All Apps', path: '/apps' },
+                  { label: 'Categories', path: '/' },
+                  { label: 'About Us', path: '#' },
+                  { label: 'Contact', path: '#' }
+                ].map(link => (
+                  <li key={link.label}>
+                    <button 
+                      onClick={() => link.path !== '#' && navigate(link.path)}
+                      className="text-slate-400 hover:text-aladeen-green transition-colors font-bold text-lg"
+                    >
+                      {link.label}
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -3054,7 +3203,14 @@ export default function App() {
               <ul className="space-y-5">
                 <li>
                   <button 
-                    onClick={() => { setIsAdminAuth(true); setIsAuthModalOpen(true); }}
+                    onClick={() => {
+                      if (isAdminAuth && currentUser?.role === 'admin') {
+                        navigate('/admin');
+                      } else {
+                        setIsAdminAuth(true);
+                        setIsAuthModalOpen(true);
+                      }
+                    }}
                     className="text-slate-400 hover:text-aladeen-green transition-colors font-bold text-lg"
                   >
                     Admin Portal
@@ -3077,87 +3233,21 @@ export default function App() {
         </div>
       </footer>
 
-      {/* App Detail Overlay */}
-      <AnimatePresence>
-        {selectedApp && (
-          <AppDetail 
-            app={selectedApp} 
-            onBack={() => setSelectedApp(null)} 
-            onAppClick={setSelectedApp}
-            apps={allApps}
-            isInstalled={installedApps.includes(selectedApp.id)}
-            onInstall={() => {
-              startDownload(selectedApp.id);
-            }}
-            onUninstall={() => handleUninstall(selectedApp.id)}
-            userReview={userReviews[selectedApp.id] || null}
-            onRate={(rating, comment) => {
-              if (!currentUser) {
-                setIsAuthModalOpen(true);
-                toast.info('Please login to leave a review');
-                return;
-              }
-              handleRate(selectedApp.id, rating, comment);
-            }}
-            downloadProgress={downloadingApps[selectedApp.id]}
-            isWishlisted={wishlist.includes(selectedApp.id)}
-            onToggleWishlist={() => toggleWishlist(selectedApp.id)}
-          />
-        )}
-      </AnimatePresence>
-
       <AuthModal 
         isOpen={isAuthModalOpen} 
         onClose={() => {
           setIsAuthModalOpen(false);
           setIsAdminAuth(false);
         }} 
-        onLogin={handleLogin} 
+        onLogin={(user) => {
+          handleLogin(user);
+          if (isAdminAuth && user.role === 'admin') {
+            navigate('/admin');
+          }
+        }} 
         isAdminMode={isAdminAuth}
       />
 
-      {/* Category Detail Overlay */}
-      <AnimatePresence>
-        {selectedCategoryDetail && (
-          <CategoryDetail 
-            category={selectedCategoryDetail}
-            onBack={() => setSelectedCategoryDetail(null)}
-            apps={allApps}
-            onAppClick={(app) => {
-              setSelectedCategoryDetail(null);
-              setSelectedApp(app);
-            }}
-            downloadingApps={downloadingApps}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Footer (Minimal) */}
-      <footer className="bg-slate-50 py-16 px-6 border-t border-slate-100">
-        <div className="max-w-4xl mx-auto text-center">
-          <div 
-            className="text-2xl font-black text-aladeen-green mb-4 tracking-tighter cursor-pointer hover:opacity-80 transition-opacity inline-block"
-            onClick={() => {
-              setIsAdminAuth(true);
-              setIsAuthModalOpen(true);
-            }}
-          >
-            aladeen<span className="text-slate-900">.app</span>
-          </div>
-          <p className="text-slate-400 text-sm mb-8 max-w-md mx-auto">
-            The cleanest platform for Bangladeshi e-commerce APKs. <br />
-            Safe, verified, and fast delivery for all your shopping needs.
-          </p>
-          <div className="flex justify-center gap-8 text-xs font-bold text-slate-400 uppercase tracking-widest">
-            <a href="#" className="hover:text-aladeen-green transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-aladeen-green transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-aladeen-green transition-colors">Contact Support</a>
-          </div>
-          <div className="mt-12 pt-8 border-t border-slate-200/50 text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">
-            © 2026 Aladeen App Store. All Rights Reserved.
-          </div>
-        </div>
-      </footer>
       <Toaster position="bottom-center" richColors />
     </div>
   );
