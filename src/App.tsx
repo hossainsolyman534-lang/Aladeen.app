@@ -292,12 +292,12 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
 
   return (
     <motion.div 
-      whileHover={{ y: -8, shadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" }}
+      whileHover={{ y: -8, shadow: "0 25px 50px -12px rgb(0 0 0 / 0.08)" }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className={`bg-white rounded-[2.5rem] border border-slate-100/60 overflow-hidden cursor-pointer group transition-all duration-500 hover:border-aladeen-green/20 ${variant === 'compact' ? 'p-3' : 'p-4'}`}
+      className={`bg-white rounded-[2rem] border border-slate-100 overflow-hidden cursor-pointer group transition-all duration-500 hover:border-aladeen-green/20 ${variant === 'compact' ? 'p-3' : 'p-6'}`}
     >
-      <div className={`aspect-square rounded-2xl overflow-hidden mb-3 shadow-sm relative transition-transform duration-500 group-hover:scale-105 ${variant === 'compact' ? 'w-12 h-12 mx-auto' : 'w-20 h-20 mx-auto'}`}>
+      <div className={`aspect-square rounded-[1.5rem] overflow-hidden mb-5 shadow-sm relative transition-transform duration-700 group-hover:scale-105 ${variant === 'compact' ? 'w-12 h-12 mx-auto' : 'w-28 h-28 mx-auto'}`}>
         <img 
           src={app.icon} 
           alt={app.name} 
@@ -305,8 +305,8 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
           referrerPolicy="no-referrer"
         />
         {app.isVerified && (
-          <div className="absolute top-1 right-1 bg-white/90 backdrop-blur-sm rounded-full p-0.5 shadow-sm border border-slate-50">
-            <CheckCircle2 className="w-2.5 h-2.5 text-aladeen-green fill-aladeen-green/10" />
+          <div className="absolute top-2 right-2 bg-white/95 backdrop-blur-sm rounded-full p-0.5 shadow-sm border border-slate-50">
+            <CheckCircle2 className="w-3.5 h-3.5 text-aladeen-green fill-aladeen-green/10" />
           </div>
         )}
         {isExpired && (
@@ -319,10 +319,10 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
         )}
       </div>
       <div className={variant === 'compact' ? 'text-center' : ''}>
-        <h3 className={`font-bold text-slate-900 truncate mb-0.5 ${variant === 'compact' ? 'text-[10px]' : 'text-xs'}`}>
+        <h3 className={`font-bold text-slate-900 truncate mb-1 ${variant === 'compact' ? 'text-[10px]' : 'text-sm'}`}>
           <HighlightedText text={app.name} highlight={highlight} />
         </h3>
-        <p className="text-[8px] font-medium text-slate-400 truncate mb-1 uppercase tracking-wider">
+        <p className="text-[10px] font-bold text-slate-400 truncate mb-3 uppercase tracking-widest opacity-70">
           <HighlightedText text={app.developer} highlight={highlight} />
         </p>
         
@@ -346,17 +346,19 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
             </div>
           </motion.div>
         ) : (
-          <div className={`flex items-center gap-1 mt-1 ${variant === 'compact' ? 'justify-center' : ''}`}>
-            <div className="flex items-center gap-0.5 bg-slate-50 px-1 py-0.5 rounded-md">
-              <span className="text-[8px] font-black text-slate-700">{app.rating}</span>
-              <Star className="w-2 h-2 fill-yellow-400 text-yellow-400" />
+          <div className={`flex items-center justify-between mt-3 ${variant === 'compact' ? 'justify-center gap-2' : ''}`}>
+            <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100/50">
+              <span className="text-[10px] font-black text-slate-700">{app.rating}</span>
+              <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
             </div>
-            <span className="text-[8px] font-bold text-slate-300 ml-auto">{app.size}</span>
-            {app.apkUrl && (
-              <div className="w-4 h-4 bg-aladeen-green/10 rounded-full flex items-center justify-center text-aladeen-green ml-1 group-hover:bg-aladeen-green group-hover:text-white transition-colors">
-                <Download className="w-2.5 h-2.5" />
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black text-slate-300 uppercase tracking-tighter">{app.size}</span>
+              {app.apkUrl && (
+                <div className="w-6 h-6 bg-aladeen-green/10 rounded-full flex items-center justify-center text-aladeen-green group-hover:bg-aladeen-green group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-aladeen-green/20">
+                  <Download className="w-3.5 h-3.5" />
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -364,65 +366,65 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
   );
 };
 
-const CategoryIcon = ({ icon }: { icon: string }) => {
+const CategoryIcon = ({ icon, className = "w-6 h-6" }: { icon: string; className?: string }) => {
   switch (icon) {
-    case 'ShoppingBag': return <ShoppingBag className="w-6 h-6" />;
-    case 'Utensils': return <Utensils className="w-6 h-6" />;
-    case 'Shirt': return <Shirt className="w-6 h-6" />;
-    case 'Smartphone': return <Smartphone className="w-6 h-6" />;
-    case 'ShieldCheck': return <ShieldCheck className="w-6 h-6" />;
-    case 'Zap': return <Zap className="w-6 h-6" />;
-    case 'Sparkles': return <Sparkles className="w-6 h-6" />;
-    case 'Home': return <HomeIcon className="w-6 h-6" />;
-    case 'GraduationCap': return <GraduationCap className="w-6 h-6" />;
-    case 'Briefcase': return <Briefcase className="w-6 h-6" />;
-    case 'Gamepad2': return <Gamepad2 className="w-6 h-6" />;
-    case 'Activity': return <Activity className="w-6 h-6" />;
-    case 'Globe': return <Globe className="w-6 h-6" />;
-    case 'Users': return <Users className="w-6 h-6" />;
-    case 'ImageIcon': return <ImageIcon className="w-6 h-6" />;
-    case 'BarChart3': return <BarChart3 className="w-6 h-6" />;
-    case 'UtensilsCrossed': return <UtensilsCrossed className="w-6 h-6" />;
-    case 'Pill': return <Pill className="w-6 h-6" />;
-    case 'Heart': return <Heart className="w-6 h-6" />;
-    case 'Tv': return <Tv className="w-6 h-6" />;
-    case 'Wrench': return <Wrench className="w-6 h-6" />;
-    case 'CheckCircle2': return <CheckCircle2 className="w-6 h-6" />;
-    case 'Cloud': return <Cloud className="w-6 h-6" />;
-    case 'Play': return <Play className="w-6 h-6" />;
-    case 'MessageSquare': return <MessageSquare className="w-6 h-6" />;
-    case 'Car': return <Car className="w-6 h-6" />;
-    default: return <ShoppingBag className="w-6 h-6" />;
+    case 'ShoppingBag': return <ShoppingBag className={className} />;
+    case 'Utensils': return <Utensils className={className} />;
+    case 'Shirt': return <Shirt className={className} />;
+    case 'Smartphone': return <Smartphone className={className} />;
+    case 'ShieldCheck': return <ShieldCheck className={className} />;
+    case 'Zap': return <Zap className={className} />;
+    case 'Sparkles': return <Sparkles className={className} />;
+    case 'Home': return <HomeIcon className={className} />;
+    case 'GraduationCap': return <GraduationCap className={className} />;
+    case 'Briefcase': return <Briefcase className={className} />;
+    case 'Gamepad2': return <Gamepad2 className={className} />;
+    case 'Activity': return <Activity className={className} />;
+    case 'Globe': return <Globe className={className} />;
+    case 'Users': return <Users className={className} />;
+    case 'ImageIcon': return <ImageIcon className={className} />;
+    case 'BarChart3': return <BarChart3 className={className} />;
+    case 'UtensilsCrossed': return <UtensilsCrossed className={className} />;
+    case 'Pill': return <Pill className={className} />;
+    case 'Heart': return <Heart className={className} />;
+    case 'Tv': return <Tv className={className} />;
+    case 'Wrench': return <Wrench className={className} />;
+    case 'CheckCircle2': return <CheckCircle2 className={className} />;
+    case 'Cloud': return <Cloud className={className} />;
+    case 'Play': return <Play className={className} />;
+    case 'MessageSquare': return <MessageSquare className={className} />;
+    case 'Car': return <Car className={className} />;
+    default: return <ShoppingBag className={className} />;
   }
 };
 
 const Section = ({ title, apps, onAppClick, onViewAll, icon: Icon, downloadingApps = {} }: { title: string; apps: AppData[]; onAppClick: (app: AppData) => void; onViewAll?: () => void; icon?: any; downloadingApps?: Record<string, number> }) => (
-  <div className="mb-24">
-    <div className="flex items-center justify-between px-6 mb-10">
+  <div className="mb-20">
+    <div className="flex items-center justify-between px-6 mb-8">
       <div className="flex items-center gap-4">
         {Icon && (
-          <div className="w-12 h-12 bg-aladeen-green/10 rounded-2xl flex items-center justify-center text-aladeen-green shadow-sm">
+          <div className="w-12 h-12 bg-aladeen-green/10 rounded-2xl flex items-center justify-center text-aladeen-green shadow-sm border border-aladeen-green/5">
             <Icon className="w-6 h-6" />
           </div>
         )}
         <div>
-          <h2 className="text-3xl font-display font-extrabold text-slate-900 tracking-tight">{title}</h2>
-          <div className="h-1 w-12 bg-aladeen-green rounded-full mt-1.5" />
+          <h2 className="text-2xl font-display font-black text-slate-900 tracking-tight leading-none">{title}</h2>
+          <div className="h-1 w-8 bg-aladeen-green rounded-full mt-2" />
         </div>
       </div>
       {onViewAll && (
         <button 
           onClick={onViewAll}
-          className="group flex items-center gap-2 px-5 py-2.5 bg-slate-50 hover:bg-aladeen-green hover:text-white rounded-xl text-sm font-bold text-slate-600 transition-all shadow-sm"
+          className="group flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-aladeen-green hover:text-white rounded-xl text-xs font-bold text-slate-600 transition-all shadow-sm border border-slate-100"
         >
           View All
           <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
         </button>
       )}
     </div>
-    <div className="flex overflow-x-auto no-scrollbar gap-8 px-6 pb-8">
+    <div className="flex overflow-x-auto no-scrollbar gap-6 px-6 pb-6">
       {apps.map(app => (
-        <div key={app.id} className="min-w-[220px] max-w-[220px] sm:min-w-[240px] sm:max-w-[240px]">
+        <div key={app.id} className="min-w-[200px] max-w-[200px] sm:min-w-[220px] sm:max-w-[220px]">
           <AppCard app={app} onClick={() => onAppClick(app)} downloadProgress={downloadingApps[app.id]} />
         </div>
       ))}
@@ -655,44 +657,64 @@ const AppDetail = ({
                 </div>
               </div>
             )}
-            <button 
-              onClick={isInstalled ? handleOpen : handleDownload}
-              disabled={isDownloading || isOpening || (isExpired && !isInstalled)}
-              className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition-all flex items-center justify-center gap-2 ${
-                isDownloading || isOpening || (isExpired && !isInstalled)
-                  ? 'bg-slate-50 text-slate-400 cursor-not-allowed shadow-none' 
-                  : 'bg-aladeen-green text-white hover:bg-aladeen-dark active:scale-[0.98] shadow-aladeen-green/20'
-              }`}
-            >
-              {isDownloading ? (
-                <span className="flex items-center gap-2">
-                  <Download className="w-5 h-5 animate-bounce" />
-                  Downloading...
-                </span>
-              ) : isOpening ? (
-                <span className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-slate-200 border-t-aladeen-green rounded-full animate-spin" />
-                  Opening...
-                </span>
-              ) : isInstalled ? (
-                <>
-                  <ExternalLink className="w-5 h-5" />
-                  Open
-                </>
+            <div className="flex gap-4">
+              {isInstalled ? (
+                <div className="flex-1 flex gap-4">
+                  <button 
+                    onClick={handleOpen}
+                    disabled={isOpening}
+                    className="flex-1 bg-aladeen-green text-white py-5 rounded-2xl font-black shadow-xl shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all flex items-center justify-center gap-3 text-lg"
+                  >
+                    {isOpening ? (
+                      <>
+                        <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Opening...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-6 h-6 fill-current" />
+                        <span>Open App</span>
+                      </>
+                    )}
+                  </button>
+                  <button 
+                    onClick={() => setShowUninstallConfirm(true)}
+                    className="px-8 bg-slate-100 text-slate-600 py-5 rounded-2xl font-black hover:bg-slate-200 transition-all text-lg"
+                  >
+                    Uninstall
+                  </button>
+                </div>
               ) : (
-                <>
-                  <Download className="w-5 h-5" />
-                  Install
-                </>
+                <button 
+                  onClick={handleDownload}
+                  disabled={isDownloading || (isExpired && !isInstalled)}
+                  className={`flex-1 py-5 rounded-2xl font-black shadow-xl transition-all flex items-center justify-center gap-3 text-lg ${
+                    isDownloading || (isExpired && !isInstalled)
+                      ? 'bg-slate-50 text-slate-400 cursor-not-allowed shadow-none' 
+                      : 'bg-aladeen-green text-white hover:bg-aladeen-dark active:scale-[0.98] shadow-aladeen-green/20'
+                  }`}
+                >
+                  {isDownloading ? (
+                    <span className="flex items-center gap-3">
+                      <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>{Math.floor(progress)}% Downloading</span>
+                    </span>
+                  ) : (
+                    <>
+                      <Download className="w-6 h-6" />
+                      <span>Install App</span>
+                    </>
+                  )}
+                </button>
               )}
-            </button>
+            </div>
 
             {app.apkUrl && !isInstalled && !isDownloading && (
               <button 
                 onClick={() => window.open(app.apkUrl, '_blank')}
-                className="w-full py-3 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl font-bold text-sm hover:bg-blue-100 transition-all flex items-center justify-center gap-2"
+                className="w-full py-4 bg-white text-aladeen-green border-2 border-aladeen-green/10 rounded-2xl font-black text-base hover:bg-aladeen-green/5 transition-all flex items-center justify-center gap-3 shadow-sm"
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-5 h-5" />
                 Direct Download APK
               </button>
             )}
@@ -1457,6 +1479,7 @@ const AdminDashboard = ({
     });
   };
   const [apkProgress, setApkProgress] = useState(0);
+  const [uploadingApk, setUploadingApk] = useState(false);
   const [formData, setFormData] = useState<Partial<AppData>>({
     name: '',
     developer: '',
@@ -2813,6 +2836,11 @@ function AppContent() {
 
   // Clients listener
   useEffect(() => {
+    if (!isAuthReady || currentUser?.role !== 'admin') {
+      setAllClients(MOCK_CLIENTS);
+      return;
+    }
+
     const q = query(collection(db, 'clients'), orderBy('onBoardDate', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const clients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ClientData));
@@ -2821,7 +2849,7 @@ function AppContent() {
       handleFirestoreError(error, OperationType.LIST, 'clients');
     });
     return () => unsubscribe();
-  }, []);
+  }, [currentUser, isAuthReady]);
 
   // Featured Categories listener
   useEffect(() => {
@@ -3251,7 +3279,7 @@ function AppContent() {
                       className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl hover:bg-slate-50 text-slate-600 hover:text-aladeen-green transition-all group/item"
                     >
                       <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center group-hover/item:bg-white transition-colors">
-                        <cat.icon className="w-4 h-4" />
+                        <CategoryIcon icon={cat.icon} className="w-4 h-4" />
                       </div>
                       <span className="font-bold text-sm">{cat.name}</span>
                     </button>
@@ -3392,19 +3420,9 @@ function AppContent() {
                     transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
                     className="text-6xl md:text-8xl font-display font-extrabold text-slate-900 mb-10 tracking-tight leading-[1.02]"
                   >
-                    Discover the Best <br />
-                    <span className="text-gradient">Shopping Apps</span>
+                    Shopping Apps
                   </motion.h1>
                   
-                  <motion.p 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.8 }}
-                    className="text-slate-500 text-xl md:text-2xl mb-14 max-w-3xl mx-auto leading-relaxed font-medium"
-                  >
-                    Access a curated collection of verified, high-performance Android applications for the ultimate shopping experience in Bangladesh.
-                  </motion.p>
-
                   <div className="relative max-w-2xl mx-auto mb-24 z-30">
                     <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
                       <Search className="w-6 h-6 text-slate-300" />
@@ -3515,22 +3533,28 @@ function AppContent() {
                     </AnimatePresence>
                   </div>
 
-                  {/* Categories Grid */}
-                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-6 mb-8">
-                    {CATEGORIES.map(cat => (
-                      <motion.div 
-                        key={cat.name}
-                        whileHover={{ y: -8 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => navigate(`/category/${slugify(cat.name)}`)}
-                        className="flex flex-col items-center gap-4 cursor-pointer group"
+                  {/* Category Filter Section */}
+                  <div className="mt-16 mb-12">
+                    <h2 className="text-4xl font-display font-black text-slate-900 mb-2 tracking-tight">ফিচার্ড প্রোডাক্টস</h2>
+                    <p className="text-slate-400 text-lg mb-10 font-medium">আমাদের সেরা পণ্য সমূহ</p>
+                    
+                    <div className="flex items-center gap-3 overflow-x-auto pb-6 no-scrollbar -mx-6 px-6">
+                      <button 
+                        onClick={() => navigate('/')}
+                        className="px-8 py-3 bg-[#e91e63] text-white rounded-full font-bold text-lg whitespace-nowrap shadow-lg shadow-[#e91e63]/20"
                       >
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[2rem] bg-white flex items-center justify-center text-slate-400 group-hover:bg-aladeen-green group-hover:text-white transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-aladeen-green/20 border border-slate-100 group-hover:border-transparent">
-                          <CategoryIcon icon={cat.icon} />
-                        </div>
-                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-aladeen-green transition-colors">{cat.name}</span>
-                      </motion.div>
-                    ))}
+                        সব
+                      </button>
+                      {CATEGORIES.map(cat => (
+                        <button 
+                          key={cat.name} 
+                          onClick={() => navigate(`/category/${slugify(cat.name)}`)}
+                          className="px-8 py-3 bg-white border border-slate-100 text-slate-600 rounded-full font-bold text-lg whitespace-nowrap hover:border-[#e91e63] hover:text-[#e91e63] transition-all"
+                        >
+                          {cat.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </section>
@@ -3569,27 +3593,27 @@ function AppContent() {
 
               {/* Home Sections */}
               {featuredCategories.length > 0 && (
-                <div className="px-6 mb-12">
+                <div className="px-6 mb-16">
                   <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 bg-aladeen-green/10 rounded-xl flex items-center justify-center text-aladeen-green">
-                      <LayoutGrid className="w-6 h-6" />
+                    <div className="w-10 h-10 bg-aladeen-green/10 rounded-xl flex items-center justify-center text-aladeen-green border border-aladeen-green/5">
+                      <LayoutGrid className="w-5 h-5" />
                     </div>
                     <h2 className="text-2xl font-black text-slate-900 tracking-tight">Featured Categories</h2>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
                     {featuredCategories.map(cat => {
                       return (
                         <motion.div
                           key={cat.id}
-                          whileHover={{ y: -5, scale: 1.02 }}
+                          whileHover={{ y: -5, shadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => navigate(`/category/${slugify(cat.name)}`)}
-                          className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm cursor-pointer group hover:border-aladeen-green/20 transition-all text-center"
+                          className="bg-white p-6 rounded-3xl border border-slate-100/80 shadow-sm cursor-pointer group hover:border-aladeen-green/20 transition-all text-center flex flex-col items-center"
                         >
-                          <div className={`w-12 h-12 ${cat.color} rounded-2xl mx-auto mb-3 flex items-center justify-center text-white shadow-lg shadow-current/20 group-hover:scale-110 transition-transform`}>
+                          <div className={`w-14 h-14 ${cat.color} rounded-2xl mb-4 flex items-center justify-center text-white shadow-lg shadow-current/20 group-hover:scale-110 transition-transform`}>
                             <CategoryIcon icon={cat.icon} />
                           </div>
-                          <h3 className="font-bold text-slate-900 text-[10px] line-clamp-1">{cat.name}</h3>
+                          <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider line-clamp-1">{cat.name}</h3>
                         </motion.div>
                       );
                     })}
