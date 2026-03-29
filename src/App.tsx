@@ -47,6 +47,7 @@ import {
   Activity,
   Phone,
   Lock,
+  Mail,
   LogOut,
   Globe,
   Facebook,
@@ -87,7 +88,9 @@ import {
   onAuthStateChanged, 
   signInWithPopup, 
   GoogleAuthProvider, 
-  signOut 
+  signOut,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword
 } from 'firebase/auth';
 
 // --- Helpers ---
@@ -201,13 +204,42 @@ const AuthModal = ({
   isOpen, 
   onClose, 
   onLogin,
+  onEmailLogin,
+  onSignUp,
   isAdminMode = false
 }: { 
   isOpen: boolean; 
   onClose: () => void; 
   onLogin: () => void;
+  onEmailLogin: (email: string, pass: string) => Promise<void>;
+  onSignUp: (name: string, phone: string, pass: string) => Promise<void>;
   isAdminMode?: boolean;
 }) => {
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      if (isAdminMode) {
+        await onEmailLogin(email, password);
+      } else if (mode === 'login') {
+        await onEmailLogin(phone + '@aladeen.app', password);
+      } else {
+        await onSignUp(name, phone, password);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -229,10 +261,14 @@ const AuthModal = ({
               <div className="flex justify-between items-center mb-10">
                 <div>
                   <h2 className="text-3xl font-display font-bold text-slate-900 leading-tight">
-                    {isAdminMode ? 'Admin Portal' : 'Welcome to Aladeen'}
+                    {isAdminMode ? 'Admin Portal' : mode === 'login' ? 'Welcome Back' : 'Create Account'}
                   </h2>
                   <p className="text-slate-500 mt-1 text-sm">
-                    {isAdminMode ? 'Secure access for administrators' : 'Sign in to access your apps and wishlist'}
+                    {isAdminMode 
+                      ? 'Secure access for administrators' 
+                      : mode === 'login' 
+                        ? 'Sign in to your account' 
+                        : 'Join Aladeen App Store'}
                   </p>
                 </div>
                 <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors self-start">
@@ -240,19 +276,106 @@ const AuthModal = ({
                 </button>
               </div>
 
-              <div className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {mode === 'signup' && !isAdminMode && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Full Name</label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                      <input 
+                        type="text"
+                        required
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                        placeholder="Enter your name"
+                        className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-aladeen-green/20 font-bold text-slate-700"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                    {isAdminMode ? 'Email Address' : 'Phone Number'}
+                  </label>
+                  <div className="relative">
+                    {isAdminMode ? (
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                    ) : (
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                    )}
+                    <input 
+                      type={isAdminMode ? "email" : "tel"}
+                      required
+                      value={isAdminMode ? email : phone}
+                      onChange={e => isAdminMode ? setEmail(e.target.value) : setPhone(e.target.value)}
+                      placeholder={isAdminMode ? "admin@aladeen.app" : "01XXXXXXXXX"}
+                      className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-aladeen-green/20 font-bold text-slate-700"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                    <input 
+                      type="password"
+                      required
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-aladeen-green/20 font-bold text-slate-700"
+                    />
+                  </div>
+                </div>
+
                 <button 
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-5 bg-aladeen-green text-white rounded-2xl font-black text-lg shadow-xl shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all flex items-center justify-center gap-3 disabled:opacity-50 mt-4"
+                >
+                  {loading ? (
+                    <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <span>{isAdminMode ? 'Admin Login' : mode === 'login' ? 'Login' : 'Sign Up'}</span>
+                  )}
+                </button>
+
+                {!isAdminMode && (
+                  <div className="text-center mt-6">
+                    <button 
+                      type="button"
+                      onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+                      className="text-sm font-bold text-slate-500 hover:text-aladeen-green transition-colors"
+                    >
+                      {mode === 'login' ? "Don't have an account? Sign Up" : "Already have an account? Login"}
+                    </button>
+                  </div>
+                )}
+
+                <div className="relative py-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-100"></div>
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-4 text-slate-400 font-bold tracking-widest">Or continue with</span>
+                  </div>
+                </div>
+
+                <button 
+                  type="button"
                   onClick={onLogin}
                   className="w-full flex items-center justify-center gap-4 bg-white border border-slate-200 py-4 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm active:scale-[0.98]"
                 >
                   <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
-                  <span>Continue with Google</span>
+                  <span>Google</span>
                 </button>
-                
-                <p className="text-center text-xs text-slate-400 font-medium px-6 leading-relaxed">
-                  By continuing, you agree to Aladeen's <span className="text-aladeen-green hover:underline cursor-pointer">Terms of Service</span> and <span className="text-aladeen-green hover:underline cursor-pointer">Privacy Policy</span>.
-                </p>
-              </div>
+              </form>
+              
+              <p className="text-center text-[10px] text-slate-400 font-medium px-6 leading-relaxed mt-8">
+                By continuing, you agree to Aladeen's <span className="text-aladeen-green hover:underline cursor-pointer">Terms of Service</span> and <span className="text-aladeen-green hover:underline cursor-pointer">Privacy Policy</span>.
+              </p>
             </div>
           </motion.div>
         </div>
@@ -286,6 +409,50 @@ const HighlightedText = ({ text, highlight }: { text: string; highlight: string 
     </>
   );
 };
+
+const CategoryCard = ({ category, onClick }: { category: FeaturedCategory; onClick: () => void }) => {
+  return (
+    <motion.div
+      whileHover={{ y: -8, shadow: "0 25px 50px -12px rgb(0 0 0 / 0.08)" }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className="bg-white rounded-[2rem] border border-slate-100 p-6 cursor-pointer group transition-all duration-500 hover:border-aladeen-green/20 text-center"
+    >
+      <div className={`w-20 h-20 mx-auto rounded-3xl ${category.color || 'bg-aladeen-green'} flex items-center justify-center text-white shadow-lg mb-4 group-hover:scale-110 transition-transform duration-500`}>
+        <div className="scale-150">
+          <CategoryIcon icon={category.icon} />
+        </div>
+      </div>
+      <h3 className="font-bold text-slate-900 text-lg mb-1">{category.name}</h3>
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-70">Explore Apps</p>
+    </motion.div>
+  );
+};
+
+const CategorySection = ({ title, categories, onCategoryClick, icon: Icon }: { title: string; categories: FeaturedCategory[]; onCategoryClick: (cat: FeaturedCategory) => void; icon: any }) => (
+  <div className="mb-16">
+    <div className="max-w-5xl mx-auto px-6 flex items-center justify-between mb-8">
+      <div className="flex items-center gap-4">
+        {Icon && (
+          <div className="w-12 h-12 bg-aladeen-green/10 rounded-2xl flex items-center justify-center text-aladeen-green shadow-sm border border-aladeen-green/10">
+            <Icon className="w-6 h-6" />
+          </div>
+        )}
+        <div>
+          <h2 className="text-2xl font-display font-black text-slate-900 tracking-tight leading-none">{title}</h2>
+          <div className="h-1 w-8 bg-aladeen-green rounded-full mt-2" />
+        </div>
+      </div>
+    </div>
+    <div className="flex overflow-x-auto no-scrollbar gap-6 px-6 pb-6">
+      {categories.map(cat => (
+        <div key={cat.id} className="min-w-[180px] max-w-[180px]">
+          <CategoryCard category={cat} onClick={() => onCategoryClick(cat)} />
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default' | 'compact'; highlight?: string; downloadProgress?: number }> = ({ app, onClick, variant = 'default', highlight = '', downloadProgress }) => {
   const isExpired = app.expiryDate ? new Date(app.expiryDate) < new Date() : false;
@@ -1146,7 +1313,6 @@ const CategoryDetail = ({
                   <span className="text-white/60 text-xs font-bold uppercase tracking-widest">{relatedApps.length} Apps Available</span>
                 </div>
                 <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-2 leading-none">{category.name}</h1>
-                <p className="text-white/70 text-lg font-medium max-w-xl line-clamp-2">{category.description}</p>
               </div>
             </div>
           </div>
@@ -2887,9 +3053,66 @@ function AppContent() {
       
       setIsAuthModalOpen(false);
       toast.success('Logged in successfully');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      toast.error('Failed to login');
+      toast.error(error.message || 'Failed to login');
+    }
+  };
+
+  const handleEmailLogin = async (email: string, pass: string) => {
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, pass);
+      const user = result.user;
+      
+      // Check if user exists in Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        const userData = {
+          name: user.displayName || 'User',
+          email: user.email,
+          role: user.email === 'hossainsolyman534@gmail.com' ? 'admin' : 'user',
+          photoURL: user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=00ff87&color=fff`,
+          installedApps: [],
+          wishlist: [],
+          reviews: {}
+        };
+        await setDoc(doc(db, 'users', user.uid), userData);
+      }
+      
+      setIsAuthModalOpen(false);
+      toast.success('Logged in successfully');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      toast.error(error.message || 'Failed to login');
+      throw error;
+    }
+  };
+
+  const handleSignUp = async (name: string, phone: string, pass: string) => {
+    try {
+      const email = phone + '@aladeen.app';
+      const result = await createUserWithEmailAndPassword(auth, email, pass);
+      const user = result.user;
+      
+      const userData = {
+        name,
+        phone,
+        email,
+        role: 'user',
+        photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=00ff87&color=fff`,
+        installedApps: [],
+        wishlist: [],
+        reviews: {}
+      };
+      
+      await setDoc(doc(db, 'users', user.uid), userData);
+      
+      setIsAuthModalOpen(false);
+      toast.success('Account created successfully');
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      toast.error(error.message || 'Failed to sign up');
+      throw error;
     }
   };
 
@@ -3541,32 +3764,15 @@ function AppContent() {
                       )}
                     </AnimatePresence>
                   </div>
-
-                  {/* Category Filter Section */}
-                  <div className="mt-16 mb-12">
-                    <h2 className="text-4xl font-display font-black text-slate-900 mb-2 tracking-tight">ফিচার্ড ক্যাটাগরি</h2>
-                    <p className="text-slate-400 text-lg mb-10 font-medium">আপনার পছন্দের ক্যাটাগরি বেছে নিন</p>
-                    
-                    <div className="flex items-center gap-3 overflow-x-auto pb-6 no-scrollbar -mx-6 px-6">
-                      <button 
-                        onClick={() => navigate('/')}
-                        className="px-8 py-3 bg-aladeen-red text-white rounded-full font-bold text-lg whitespace-nowrap shadow-lg shadow-aladeen-red/20"
-                      >
-                        সব
-                      </button>
-                      {featuredCategories.map(cat => (
-                        <button 
-                          key={cat.id} 
-                          onClick={() => navigate(`/category/${slugify(cat.name)}`)}
-                          className="px-8 py-3 bg-white border border-slate-100 text-slate-600 rounded-full font-bold text-lg whitespace-nowrap hover:border-aladeen-red hover:text-aladeen-red transition-all"
-                        >
-                          {cat.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               </section>
+
+              <CategorySection 
+                title="ফিচার্ড ক্যাটাগরি" 
+                categories={featuredCategories} 
+                onCategoryClick={(cat) => navigate(`/category/${slugify(cat.name)}`)}
+                icon={LayoutGrid}
+              />
 
               {/* Home Sections */}
               <Section 
@@ -3705,6 +3911,8 @@ function AppContent() {
           setIsAdminAuth(false);
         }} 
         onLogin={handleLogin} 
+        onEmailLogin={handleEmailLogin}
+        onSignUp={handleSignUp}
         isAdminMode={isAdminAuth}
       />
 
