@@ -352,6 +352,11 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
               <Star className="w-2 h-2 fill-yellow-400 text-yellow-400" />
             </div>
             <span className="text-[8px] font-bold text-slate-300 ml-auto">{app.size}</span>
+            {app.apkUrl && (
+              <div className="w-4 h-4 bg-aladeen-green/10 rounded-full flex items-center justify-center text-aladeen-green ml-1 group-hover:bg-aladeen-green group-hover:text-white transition-colors">
+                <Download className="w-2.5 h-2.5" />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -511,14 +516,11 @@ const AppDetail = ({
     if (isInstalled) return;
     
     if (app.apkUrl) {
-      // Real download
-      const link = document.createElement('a');
-      link.href = app.apkUrl;
-      link.download = `${app.name}.apk`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Real download - using window.open for better cross-origin support
+      window.open(app.apkUrl, '_blank');
       toast.success(`Starting download: ${app.name}`);
+    } else {
+      toast.error("Download link not available.");
     }
     
     onInstall();
@@ -684,6 +686,16 @@ const AppDetail = ({
                 </>
               )}
             </button>
+
+            {app.apkUrl && !isInstalled && !isDownloading && (
+              <button 
+                onClick={() => window.open(app.apkUrl, '_blank')}
+                className="w-full py-3 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl font-bold text-sm hover:bg-blue-100 transition-all flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Direct Download APK
+              </button>
+            )}
 
             <button 
               onClick={onToggleWishlist}
@@ -1066,58 +1078,146 @@ const CategoryDetail = ({
     [category.name, apps]
   );
 
+  const featuredInCategory = useMemo(() => 
+    relatedApps.filter(app => app.isFeatured).slice(0, 3),
+    [relatedApps]
+  );
+
   return (
     <motion.div 
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="fixed inset-0 bg-white z-50 overflow-y-auto"
+      className="fixed inset-0 bg-slate-50 z-50 overflow-y-auto"
     >
-      <div className="relative h-64 md:h-80 w-full overflow-hidden">
+      {/* Hero Header */}
+      <div className="relative h-[45vh] md:h-[55vh] w-full overflow-hidden">
         <img 
           src={category.banner} 
           alt={category.name} 
           className="w-full h-full object-cover"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        <button 
-          onClick={onBack} 
-          className="absolute top-6 left-6 p-3 bg-white/20 backdrop-blur-md hover:bg-white/30 rounded-full text-white transition-all shadow-lg z-20"
-        >
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <div className="absolute bottom-8 left-8 z-20">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-xl">
-              <CategoryIcon icon={category.icon} />
-            </div>
-            <div>
-              <h1 className="text-3xl font-black text-white drop-shadow-lg">{category.name}</h1>
-              <p className="text-white/80 text-sm font-medium mt-1 drop-shadow-md">Explore the best {category.name.toLowerCase()} apps</p>
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+        
+        <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-30">
+          <button 
+            onClick={onBack} 
+            className="p-3 bg-white/10 backdrop-blur-xl hover:bg-white/20 rounded-2xl text-white transition-all shadow-2xl border border-white/10 group"
+          >
+            <ArrowLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
+          </button>
+        </div>
+
+        <div className="absolute bottom-16 left-0 right-0 px-8 z-20">
+          <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-8">
+            <div className="flex items-center gap-6">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2.5rem] bg-white/10 backdrop-blur-2xl flex items-center justify-center text-white shadow-2xl border border-white/20">
+                <div className="scale-150">
+                  <CategoryIcon icon={category.icon} />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="px-3 py-1 bg-aladeen-green text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-aladeen-green/20">Category</span>
+                  <span className="text-white/60 text-xs font-bold uppercase tracking-widest">{relatedApps.length} Apps Available</span>
+                </div>
+                <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-2 leading-none">{category.name}</h1>
+                <p className="text-white/70 text-lg font-medium max-w-xl line-clamp-2">{category.description}</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="mb-16">
-          <h2 className="text-xl font-bold text-slate-900 mb-4">About {category.name}</h2>
-          <p className="text-slate-500 max-w-2xl leading-relaxed text-lg">
-            {category.description}
-          </p>
-        </div>
-
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-slate-900">Apps in this Category</h3>
-            <span className="text-sm font-bold text-slate-400">{relatedApps.length} Apps</span>
+      <div className="max-w-5xl mx-auto px-6 -mt-12 relative z-30 pb-20">
+        {/* Featured Apps in Category */}
+        {featuredInCategory.length > 0 && (
+          <div className="mb-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {featuredInCategory.map(app => (
+              <motion.div 
+                key={app.id}
+                whileHover={{ y: -10 }}
+                onClick={() => onAppClick(app)}
+                className="bg-white rounded-[2.5rem] p-6 shadow-xl border border-slate-100 flex items-center gap-4 cursor-pointer group"
+              >
+                <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg group-hover:scale-110 transition-transform">
+                  <img src={app.icon} alt={app.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-2 py-0.5 bg-aladeen-green/10 text-aladeen-green text-[8px] font-black uppercase tracking-widest rounded-full">Featured</span>
+                  </div>
+                  <h3 className="font-bold text-slate-900 truncate">{app.name}</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{app.developer}</p>
+                </div>
+                <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-aladeen-green group-hover:bg-aladeen-green group-hover:text-white transition-all">
+                  <ChevronRight className="w-5 h-5" />
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+        <div className="bg-white rounded-[3rem] p-10 shadow-2xl shadow-slate-200/50 border border-slate-100">
+          <div className="flex items-center justify-between mb-12">
+            <div>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Top <span className="text-aladeen-green">{category.name}</span> Apps</h2>
+              <p className="text-slate-400 font-bold text-sm mt-1 uppercase tracking-widest">Handpicked for you</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
+                <LayoutGrid className="w-5 h-5" />
+              </div>
+            </div>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-            {relatedApps.map(app => (
-              <AppCard key={app.id} app={app} onClick={() => onAppClick(app)} downloadProgress={downloadingApps[app.id]} />
-            ))}
+          {relatedApps.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8">
+              {relatedApps.map(app => (
+                <AppCard 
+                  key={app.id} 
+                  app={app} 
+                  onClick={() => onAppClick(app)} 
+                  downloadProgress={downloadingApps[app.id]} 
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="py-20 text-center">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mx-auto mb-6">
+                <Search className="w-10 h-10" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">No apps found</h3>
+              <p className="text-slate-400 font-medium">We couldn't find any apps in this category yet.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Featured Section in Category */}
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="md:col-span-2 bg-gradient-to-br from-aladeen-green to-aladeen-dark rounded-[3rem] p-10 text-white relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:scale-110 transition-transform duration-700" />
+            <div className="relative z-10">
+              <h3 className="text-2xl font-black mb-4">Why use {category.name} apps?</h3>
+              <p className="text-white/80 font-medium leading-relaxed mb-8 max-w-md">
+                These applications are specifically selected to provide the best user experience and performance in the {category.name.toLowerCase()} space.
+              </p>
+              <div className="flex items-center gap-4">
+                <div className="flex -space-x-3">
+                  {relatedApps.slice(0, 3).map((app, i) => (
+                    <img key={i} src={app.icon} alt="" className="w-10 h-10 rounded-full border-2 border-aladeen-green object-cover" referrerPolicy="no-referrer" />
+                  ))}
+                </div>
+                <span className="text-sm font-bold">Trusted by thousands of users</span>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-xl flex flex-col justify-center items-center text-center">
+            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 mb-6">
+              <ShieldCheck className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-black text-slate-900 mb-2">Safe & Secure</h3>
+            <p className="text-slate-400 text-sm font-medium">All apps are scanned and verified for your safety.</p>
           </div>
         </div>
       </div>
@@ -1637,7 +1737,6 @@ const AdminDashboard = ({
               </button>
             </div>
           )}
-        </div>
 
           {!isAdding && !isAddingClient && !isAddingFeatured && activeTab === 'featured' && (
             <div className="flex items-center gap-4">
@@ -1656,12 +1755,11 @@ const AdminDashboard = ({
           <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredCategories.map(cat => {
-                const IconComponent = (require('lucide-react') as any)[cat.icon] || LayoutGrid;
                 return (
                   <div key={cat.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:border-aladeen-green/20 transition-all">
                     <div className="flex items-center gap-4">
                       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-current/20 ${cat.color}`}>
-                        <IconComponent className="w-6 h-6" />
+                        <CategoryIcon icon={cat.icon} />
                       </div>
                       <div>
                         <h3 className="font-bold text-slate-900">{cat.name}</h3>
@@ -1878,6 +1976,18 @@ const AdminDashboard = ({
                       )}
                     </div>
                   )}
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">APK Download URL (Direct Link)</label>
+                  <input 
+                    required
+                    type="url" 
+                    value={formData.apkUrl}
+                    onChange={e => setFormData({...formData, apkUrl: e.target.value})}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
+                    placeholder="e.g. https://example.com/app.apk"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1 font-medium italic">Provide a direct link to the APK file for users to download.</p>
                 </div>
                 <div>
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Mobile Preview Images (Screenshots)</label>
@@ -2501,9 +2611,7 @@ const AdminDashboard = ({
               </motion.div>
             </div>
           )}
-        </AnimatePresence>
 
-        <AnimatePresence>
           {featuredToDelete && (
             <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
               <motion.div 
@@ -2546,79 +2654,80 @@ const AdminDashboard = ({
               </motion.div>
             </div>
           )}
-        </AnimatePresence>
-        {appToDelete && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border border-slate-100"
-            >
-              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mb-8 mx-auto">
-                <Trash2 className="w-10 h-10" />
-              </div>
-              <h3 className="text-2xl font-black text-slate-900 text-center mb-3 tracking-tight">Delete App?</h3>
-              <p className="text-slate-500 text-center text-base mb-10 leading-relaxed">
-                Are you sure you want to delete <span className="font-bold text-slate-900">{appToDelete.name}</span>? This action cannot be undone and will remove the app from the store.
-              </p>
-              <div className="flex gap-4">
-                <button 
-                  onClick={() => {
-                    onDeleteApp(appToDelete.id);
-                    setAppToDelete(null);
-                  }}
-                  className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-bold hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all active:scale-[0.98]"
-                >
-                  Delete App
-                </button>
-                <button 
-                  onClick={() => setAppToDelete(null)}
-                  className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all active:scale-[0.98]"
-                >
-                  Cancel
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
 
-        {clientToDelete && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border border-slate-100"
-            >
-              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mb-8 mx-auto">
-                <Trash2 className="w-10 h-10" />
-              </div>
-              <h3 className="text-2xl font-black text-slate-900 text-center mb-3 tracking-tight">Remove Client?</h3>
-              <p className="text-slate-500 text-center text-base mb-10 leading-relaxed">
-                Are you sure you want to remove <span className="font-bold text-slate-900">{clientToDelete.name}</span> from your client list?
-              </p>
-              <div className="flex gap-4">
-                <button 
-                  onClick={() => {
-                    onDeleteClient(clientToDelete.id);
-                    setClientToDelete(null);
-                  }}
-                  className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-bold hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all active:scale-[0.98]"
-                >
-                  Remove
-                </button>
-                <button 
-                  onClick={() => setClientToDelete(null)}
-                  className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all active:scale-[0.98]"
-                >
-                  Cancel
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+          {appToDelete && (
+            <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border border-slate-100"
+              >
+                <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mb-8 mx-auto">
+                  <Trash2 className="w-10 h-10" />
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 text-center mb-3 tracking-tight">Delete App?</h3>
+                <p className="text-slate-500 text-center text-base mb-10 leading-relaxed">
+                  Are you sure you want to delete <span className="font-bold text-slate-900">{appToDelete.name}</span>? This action cannot be undone and will remove the app from the store.
+                </p>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => {
+                      onDeleteApp(appToDelete.id);
+                      setAppToDelete(null);
+                    }}
+                    className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-bold hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all active:scale-[0.98]"
+                  >
+                    Delete App
+                  </button>
+                  <button 
+                    onClick={() => setAppToDelete(null)}
+                    className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all active:scale-[0.98]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {clientToDelete && (
+            <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border border-slate-100"
+              >
+                <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mb-8 mx-auto">
+                  <Trash2 className="w-10 h-10" />
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 text-center mb-3 tracking-tight">Remove Client?</h3>
+                <p className="text-slate-500 text-center text-base mb-10 leading-relaxed">
+                  Are you sure you want to remove <span className="font-bold text-slate-900">{clientToDelete.name}</span> from your client list?
+                </p>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => {
+                      onDeleteClient(clientToDelete.id);
+                      setClientToDelete(null);
+                    }}
+                    className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-bold hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all active:scale-[0.98]"
+                  >
+                    Remove
+                  </button>
+                  <button 
+                    onClick={() => setClientToDelete(null)}
+                    className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all active:scale-[0.98]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
@@ -3469,7 +3578,6 @@ function AppContent() {
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     {featuredCategories.map(cat => {
-                      const IconComponent = (require('lucide-react') as any)[cat.icon] || LayoutGrid;
                       return (
                         <motion.div
                           key={cat.id}
@@ -3479,7 +3587,7 @@ function AppContent() {
                           className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm cursor-pointer group hover:border-aladeen-green/20 transition-all text-center"
                         >
                           <div className={`w-12 h-12 ${cat.color} rounded-2xl mx-auto mb-3 flex items-center justify-center text-white shadow-lg shadow-current/20 group-hover:scale-110 transition-transform`}>
-                            <IconComponent className="w-6 h-6" />
+                            <CategoryIcon icon={cat.icon} />
                           </div>
                           <h3 className="font-bold text-slate-900 text-[10px] line-clamp-1">{cat.name}</h3>
                         </motion.div>
