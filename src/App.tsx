@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate, useParams, Link, useLocation, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, useNavigate, useParams, Link, useLocation, Navigate } from 'react-router-dom';
 import { Toaster, toast } from 'sonner';
 import { 
   Search, 
@@ -368,6 +368,7 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
 
 const CategoryIcon = ({ icon, className = "w-6 h-6" }: { icon: string; className?: string }) => {
   switch (icon) {
+    case 'LayoutGrid': return <LayoutGrid className={className} />;
     case 'ShoppingBag': return <ShoppingBag className={className} />;
     case 'Utensils': return <Utensils className={className} />;
     case 'Shirt': return <Shirt className={className} />;
@@ -394,7 +395,7 @@ const CategoryIcon = ({ icon, className = "w-6 h-6" }: { icon: string; className
     case 'Play': return <Play className={className} />;
     case 'MessageSquare': return <MessageSquare className={className} />;
     case 'Car': return <Car className={className} />;
-    default: return <ShoppingBag className={className} />;
+    default: return <LayoutGrid className={className} />;
   }
 };
 
@@ -922,7 +923,7 @@ const AppDetail = ({
               <p className="text-slate-500 text-sm mb-4">You need to install this app to leave a review.</p>
               <button 
                 onClick={onInstall}
-                className="text-aladeen-green font-bold text-sm hover:underline"
+                className="text-aladeen-red font-bold text-sm hover:underline"
               >
                 Install now
               </button>
@@ -933,7 +934,7 @@ const AppDetail = ({
             <motion.p 
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-4 text-xs text-aladeen-green font-bold flex items-center gap-1.5"
+              className="mt-4 text-xs text-aladeen-red font-bold flex items-center gap-1.5"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               Your review has been submitted!
@@ -945,7 +946,7 @@ const AppDetail = ({
         <div className="mb-10">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-slate-900">Ratings & Reviews</h2>
-            <button className="text-aladeen-green font-bold text-sm">See all</button>
+            <button className="text-aladeen-red font-bold text-sm">See all</button>
           </div>
 
           <div className="space-y-8">
@@ -1020,7 +1021,7 @@ const AppDetail = ({
             exit={{ opacity: 0, y: 50 }}
             className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full font-bold shadow-2xl z-[110] flex items-center gap-3"
           >
-            <div className="w-2 h-2 rounded-full bg-aladeen-green animate-pulse" />
+            <div className="w-2 h-2 rounded-full bg-aladeen-red animate-pulse" />
             Opening {app.name}...
           </motion.div>
         )}
@@ -1365,7 +1366,7 @@ const UserProfile = ({
             </div>
             <h4 className="text-lg font-bold text-slate-900">No apps installed yet</h4>
             <p className="text-slate-500 text-sm max-w-xs mx-auto mt-2">
-              Browse our collection and install your favorite shopping apps to see them here.
+              Browse our collection and install your favorite apps to see them here.
             </p>
           </div>
         )}
@@ -1679,29 +1680,29 @@ const AdminDashboard = ({
               <ArrowLeft className="w-6 h-6 text-slate-700" />
             </button>
             <div>
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Admin <span className="text-aladeen-green">Dashboard</span></h1>
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Admin <span className="text-aladeen-red">Dashboard</span></h1>
               <div className="flex items-center gap-4 mt-2">
                 <button 
                   onClick={() => setActiveTab('manage')}
-                  className={`text-sm font-bold transition-colors ${activeTab === 'manage' ? 'text-aladeen-green' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`text-sm font-bold transition-colors ${activeTab === 'manage' ? 'text-aladeen-red' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   Manage Apps
                 </button>
                 <button 
                   onClick={() => setActiveTab('analytics')}
-                  className={`text-sm font-bold transition-colors ${activeTab === 'analytics' ? 'text-aladeen-green' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`text-sm font-bold transition-colors ${activeTab === 'analytics' ? 'text-aladeen-red' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   Analytics
                 </button>
                 <button 
                   onClick={() => setActiveTab('clients')}
-                  className={`text-sm font-bold transition-colors ${activeTab === 'clients' ? 'text-aladeen-green' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`text-sm font-bold transition-colors ${activeTab === 'clients' ? 'text-aladeen-red' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   Clients
                 </button>
                 <button 
                   onClick={() => setActiveTab('featured')}
-                  className={`text-sm font-bold transition-colors ${activeTab === 'featured' ? 'text-aladeen-green' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`text-sm font-bold transition-colors ${activeTab === 'featured' ? 'text-aladeen-red' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   Featured Categories
                 </button>
@@ -1722,7 +1723,7 @@ const AdminDashboard = ({
               </div>
               <button 
                 onClick={() => setIsAdding(true)}
-                className="flex items-center gap-2 bg-aladeen-green text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all active:scale-95"
+                className="flex items-center gap-2 bg-aladeen-red text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-aladeen-red/20 hover:bg-aladeen-dark transition-all active:scale-95"
               >
                 <PlusCircle className="w-5 h-5" />
                 Publish New APK
@@ -1871,7 +1872,7 @@ const AdminDashboard = ({
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-aladeen-green/20 focus:border-aladeen-green transition-all"
-                    placeholder="e.g. Daraz Shopping"
+                    placeholder="e.g. Daraz, Facebook"
                   />
                 </div>
                 <div>
@@ -2626,7 +2627,7 @@ const AdminDashboard = ({
 
                   <div className="flex gap-4">
                     <button type="button" onClick={() => setIsAddingFeatured(false)} className="flex-1 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 transition-all">Cancel</button>
-                    <button type="submit" className="flex-[2] py-4 bg-aladeen-green text-white rounded-2xl font-bold shadow-lg shadow-aladeen-green/20 hover:-translate-y-1 transition-all">
+                    <button type="submit" className="flex-[2] py-4 bg-aladeen-red text-white rounded-2xl font-bold shadow-lg shadow-aladeen-red/20 hover:-translate-y-1 transition-all">
                       {editingFeatured ? 'Save Changes' : 'Add Category'}
                     </button>
                   </div>
@@ -2759,9 +2760,9 @@ const AdminDashboard = ({
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <AppContent />
-    </BrowserRouter>
+    </Router>
   );
 }
 
@@ -3072,6 +3073,14 @@ function AppContent() {
     const app = allApps.find(a => a.id === appId);
     if (app?.apkUrl) {
       toast.info(`Downloading APK: ${app.name}...`);
+      // Trigger real download
+      const link = document.createElement('a');
+      link.href = app.apkUrl;
+      link.setAttribute('download', `${app.name}.apk`);
+      link.setAttribute('target', '_blank');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } else {
       toast.info(`Installing ${app?.name || 'app'}...`);
     }
@@ -3242,7 +3251,7 @@ function AppContent() {
             onClick={() => { navigate('/'); setSelectedCategory(null); setSearchQuery(''); }}
           >
             <div className="w-10 h-10 bg-aladeen-green rounded-xl flex items-center justify-center text-white shadow-lg shadow-aladeen-green/20">
-              <ShoppingBag className="w-6 h-6" />
+              <LayoutGrid className="w-6 h-6" />
             </div>
             <span>aladeen<span className="text-slate-900">.app</span></span>
           </div>
@@ -3411,7 +3420,7 @@ function AppContent() {
                     className="inline-flex items-center gap-2 px-5 py-2 bg-aladeen-green/10 text-aladeen-green rounded-full text-[11px] font-bold uppercase tracking-[0.2em] mb-10 shadow-sm border border-aladeen-green/10"
                   >
                     <Sparkles className="w-4 h-4" />
-                    <span>The Future of E-commerce in Bangladesh</span>
+                    <span>The Ultimate App Store for Bangladesh</span>
                   </motion.div>
                   
                   <motion.h1 
@@ -3420,7 +3429,7 @@ function AppContent() {
                     transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
                     className="text-6xl md:text-8xl font-display font-extrabold text-slate-900 mb-10 tracking-tight leading-[1.02]"
                   >
-                    Shopping Apps
+                    Discover Apps
                   </motion.h1>
                   
                   <div className="relative max-w-2xl mx-auto mb-24 z-30">
@@ -3535,21 +3544,21 @@ function AppContent() {
 
                   {/* Category Filter Section */}
                   <div className="mt-16 mb-12">
-                    <h2 className="text-4xl font-display font-black text-slate-900 mb-2 tracking-tight">ফিচার্ড প্রোডাক্টস</h2>
-                    <p className="text-slate-400 text-lg mb-10 font-medium">আমাদের সেরা পণ্য সমূহ</p>
+                    <h2 className="text-4xl font-display font-black text-slate-900 mb-2 tracking-tight">ফিচার্ড ক্যাটাগরি</h2>
+                    <p className="text-slate-400 text-lg mb-10 font-medium">আপনার পছন্দের ক্যাটাগরি বেছে নিন</p>
                     
                     <div className="flex items-center gap-3 overflow-x-auto pb-6 no-scrollbar -mx-6 px-6">
                       <button 
                         onClick={() => navigate('/')}
-                        className="px-8 py-3 bg-[#e91e63] text-white rounded-full font-bold text-lg whitespace-nowrap shadow-lg shadow-[#e91e63]/20"
+                        className="px-8 py-3 bg-aladeen-red text-white rounded-full font-bold text-lg whitespace-nowrap shadow-lg shadow-aladeen-red/20"
                       >
                         সব
                       </button>
-                      {CATEGORIES.map(cat => (
+                      {featuredCategories.map(cat => (
                         <button 
-                          key={cat.name} 
+                          key={cat.id} 
                           onClick={() => navigate(`/category/${slugify(cat.name)}`)}
-                          className="px-8 py-3 bg-white border border-slate-100 text-slate-600 rounded-full font-bold text-lg whitespace-nowrap hover:border-[#e91e63] hover:text-[#e91e63] transition-all"
+                          className="px-8 py-3 bg-white border border-slate-100 text-slate-600 rounded-full font-bold text-lg whitespace-nowrap hover:border-aladeen-red hover:text-aladeen-red transition-all"
                         >
                           {cat.name}
                         </button>
@@ -3559,68 +3568,7 @@ function AppContent() {
                 </div>
               </section>
 
-              {/* Featured Category */}
-              <div className="px-6 mb-20">
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  className="bg-aladeen-green rounded-[3rem] p-10 md:p-16 text-white relative overflow-hidden shadow-2xl shadow-aladeen-green/20"
-                >
-                  <div className="relative z-10 max-w-lg">
-                    <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest mb-8 border border-white/10">
-                      <Sparkles className="w-4 h-4" />
-                      Featured Category
-                    </div>
-                    <h2 className="text-4xl md:text-6xl font-display font-extrabold mb-6 leading-tight tracking-tight">Fresh Groceries, <br />Delivered Fast.</h2>
-                    <p className="text-white/90 text-lg md:text-xl mb-10 leading-relaxed font-medium">
-                      Discover the best grocery apps in Bangladesh. From fresh produce to daily essentials, get everything delivered to your doorstep in minutes.
-                    </p>
-                    <button 
-                      onClick={() => navigate(`/category/grocery`)}
-                      className="bg-white text-aladeen-green px-10 py-5 rounded-2xl font-bold text-base hover:bg-slate-50 transition-all active:scale-95 shadow-xl"
-                    >
-                      Explore Grocery Apps
-                    </button>
-                  </div>
-                  
-                  {/* Decorative Elements */}
-                  <div className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
-                  <div className="absolute bottom-0 right-0 translate-y-1/4 translate-x-1/4 w-[30rem] h-[30rem] bg-aladeen-dark/20 rounded-full blur-3xl" />
-                  <Utensils className="absolute bottom-[-40px] right-[-40px] w-80 h-80 text-white/5 -rotate-12" />
-                </motion.div>
-              </div>
-
               {/* Home Sections */}
-              {featuredCategories.length > 0 && (
-                <div className="px-6 mb-16">
-                  <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 bg-aladeen-green/10 rounded-xl flex items-center justify-center text-aladeen-green border border-aladeen-green/5">
-                      <LayoutGrid className="w-5 h-5" />
-                    </div>
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Featured Categories</h2>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                    {featuredCategories.map(cat => {
-                      return (
-                        <motion.div
-                          key={cat.id}
-                          whileHover={{ y: -5, shadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => navigate(`/category/${slugify(cat.name)}`)}
-                          className="bg-white p-6 rounded-3xl border border-slate-100/80 shadow-sm cursor-pointer group hover:border-aladeen-green/20 transition-all text-center flex flex-col items-center"
-                        >
-                          <div className={`w-14 h-14 ${cat.color} rounded-2xl mb-4 flex items-center justify-center text-white shadow-lg shadow-current/20 group-hover:scale-110 transition-transform`}>
-                            <CategoryIcon icon={cat.icon} />
-                          </div>
-                          <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider line-clamp-1">{cat.name}</h3>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
               <Section 
                 title="Featured Apps" 
                 apps={featuredApps} 
@@ -3686,12 +3634,12 @@ function AppContent() {
             <div className="col-span-1 md:col-span-2">
               <div className="text-4xl font-display font-black text-aladeen-green mb-8 tracking-tighter flex items-center gap-3" onClick={() => navigate('/')}>
                 <div className="w-12 h-12 bg-aladeen-green rounded-2xl flex items-center justify-center text-white shadow-lg shadow-aladeen-green/20">
-                  <ShoppingBag className="w-7 h-7" />
+                  <LayoutGrid className="w-7 h-7" />
                 </div>
                 <span>aladeen<span className="text-white">.app</span></span>
               </div>
               <p className="text-slate-400 text-xl max-w-md leading-relaxed mb-10 font-medium">
-                The most trusted platform for discovering and downloading verified Android applications in Bangladesh. Experience e-commerce like never before.
+                The most trusted platform for discovering and downloading verified Android applications in Bangladesh. Experience the best apps like never before.
               </p>
               <div className="flex items-center gap-5">
                 {[
@@ -3716,6 +3664,7 @@ function AppContent() {
                 {[
                   { label: 'Home', path: '/' },
                   { label: 'All Apps', path: '/apps' },
+                  { label: 'Admin Dashboard', path: '/admin' },
                   { label: 'About Us', path: '#' },
                   { label: 'Contact', path: '#' }
                 ].map(link => (
