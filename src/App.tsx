@@ -7,6 +7,7 @@ import {
   Star, 
   Download, 
   ArrowLeft, 
+  ArrowRight,
   MoreVertical, 
   Share2, 
   ChevronRight,
@@ -92,6 +93,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword
 } from 'firebase/auth';
+import PullToRefresh from 'react-simple-pull-to-refresh';
 
 // --- Helpers ---
 const slugify = (text: string) => text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
@@ -180,7 +182,7 @@ const AppDetailRouteWrapper = ({ allApps, ...props }: any) => {
   );
 };
 
-const CategoryDetailRouteWrapper = ({ allApps, downloadingApps }: any) => {
+const CategoryDetailRouteWrapper = ({ allApps, downloadingApps, onRefresh }: any) => {
   const { categoryName } = useParams();
   const navigate = useNavigate();
   const category = CATEGORIES.find(c => slugify(c.name) === categoryName);
@@ -194,6 +196,7 @@ const CategoryDetailRouteWrapper = ({ allApps, downloadingApps }: any) => {
       apps={allApps}
       onAppClick={(app: any) => navigate(`/${slugify(app.name)}`)}
       downloadingApps={downloadingApps}
+      onRefresh={onRefresh}
     />
   );
 };
@@ -366,7 +369,7 @@ const AuthModal = ({
                 <button 
                   type="button"
                   onClick={onLogin}
-                  className="w-full flex items-center justify-center gap-4 bg-white border border-slate-200 py-4 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm active:scale-[0.98]"
+                  className="w-full flex items-center justify-center gap-4 bg-white border border-aladeen-green/20 py-4 rounded-2xl font-bold text-slate-700 hover:bg-aladeen-green/5 transition-all shadow-sm active:scale-[0.98]"
                 >
                   <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
                   <span>Google</span>
@@ -413,18 +416,17 @@ const HighlightedText = ({ text, highlight }: { text: string; highlight: string 
 const CategoryCard = ({ category, onClick }: { category: FeaturedCategory; onClick: () => void }) => {
   return (
     <motion.div
-      whileHover={{ y: -8, shadow: "0 25px 50px -12px rgb(0 0 0 / 0.08)" }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{ y: -5 }}
+      whileTap={{ scale: 0.95 }}
       onClick={onClick}
-      className="bg-white rounded-[2rem] border border-slate-100 p-6 cursor-pointer group transition-all duration-500 hover:border-aladeen-green/20 text-center"
+      className="cursor-pointer group text-center"
     >
-      <div className={`w-20 h-20 mx-auto rounded-3xl ${category.color || 'bg-aladeen-green'} flex items-center justify-center text-white shadow-lg mb-4 group-hover:scale-110 transition-transform duration-500`}>
-        <div className="scale-150">
+      <div className={`w-16 h-16 mx-auto rounded-[22%] ${category.color || 'bg-aladeen-green'} flex items-center justify-center text-white shadow-lg mb-3 group-hover:scale-105 transition-transform duration-300`}>
+        <div className="scale-125">
           <CategoryIcon icon={category.icon} />
         </div>
       </div>
-      <h3 className="font-bold text-slate-900 text-lg mb-1">{category.name}</h3>
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-70">Explore Apps</p>
+      <h3 className="font-medium text-slate-800 text-[13px] line-clamp-1">{category.name}</h3>
     </motion.div>
   );
 };
@@ -459,12 +461,12 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
 
   return (
     <motion.div 
-      whileHover={{ y: -8, shadow: "0 25px 50px -12px rgb(0 0 0 / 0.08)" }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{ y: -5 }}
+      whileTap={{ scale: 0.95 }}
       onClick={onClick}
-      className={`bg-white rounded-[2rem] border border-slate-100 overflow-hidden cursor-pointer group transition-all duration-500 hover:border-aladeen-green/20 ${variant === 'compact' ? 'p-3' : 'p-6'}`}
+      className={`cursor-pointer group transition-all duration-300 ${variant === 'compact' ? 'w-full' : 'w-full'}`}
     >
-      <div className={`aspect-square rounded-[1.5rem] overflow-hidden mb-5 shadow-sm relative transition-transform duration-700 group-hover:scale-105 ${variant === 'compact' ? 'w-12 h-12 mx-auto' : 'w-28 h-28 mx-auto'}`}>
+      <div className={`relative aspect-square rounded-[22%] overflow-hidden mb-3 shadow-md transition-transform duration-500 group-hover:scale-105 bg-white border border-slate-100 ${variant === 'compact' ? 'w-14 h-14 mx-auto' : 'w-full'}`}>
         <img 
           src={app.icon} 
           alt={app.name} 
@@ -472,38 +474,39 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
           referrerPolicy="no-referrer"
         />
         {app.isVerified && (
-          <div className="absolute top-2 right-2 bg-white/95 backdrop-blur-sm rounded-full p-0.5 shadow-sm border border-slate-50">
-            <CheckCircle2 className="w-3.5 h-3.5 text-aladeen-green fill-aladeen-green/10" />
+          <div className="absolute top-1.5 right-1.5 bg-white/95 backdrop-blur-sm rounded-full p-0.5 shadow-sm border border-slate-50">
+            <CheckCircle2 className="w-3 h-3 text-aladeen-green fill-aladeen-green/10" />
           </div>
         )}
         {isExpired && (
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center p-2">
-            <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1 shadow-lg">
-              <Calendar className="w-3 h-3 text-rose-500" />
-              <span className="text-[8px] font-black text-rose-600 uppercase tracking-widest">Expired</span>
+            <div className="bg-white/90 backdrop-blur-sm px-1.5 py-0.5 rounded-lg flex items-center gap-1 shadow-lg">
+              <Calendar className="w-2.5 h-2.5 text-rose-500" />
+              <span className="text-[7px] font-black text-rose-600 uppercase tracking-widest">Expired</span>
             </div>
           </div>
         )}
       </div>
-      <div className={variant === 'compact' ? 'text-center' : ''}>
-        <h3 className={`font-bold text-slate-900 truncate mb-1 ${variant === 'compact' ? 'text-[10px]' : 'text-sm'}`}>
+      
+      <div className="px-1">
+        <h3 className={`font-medium text-slate-800 line-clamp-2 leading-tight mb-1 ${variant === 'compact' ? 'text-[10px] text-center' : 'text-[13px]'}`}>
           <HighlightedText text={app.name} highlight={highlight} />
         </h3>
-        <p className="text-[10px] font-bold text-slate-400 truncate mb-3 uppercase tracking-widest opacity-70">
-          <HighlightedText text={app.developer} highlight={highlight} />
-        </p>
         
-        {downloadProgress !== undefined ? (
+        <div className={`flex items-center gap-1.5 ${variant === 'compact' ? 'justify-center' : ''}`}>
+          <div className="flex items-center gap-1 bg-slate-100/80 px-1.5 py-0.5 rounded-md">
+            <span className="text-[10px] font-bold text-slate-600">{app.rating}</span>
+            <Star className="w-2.5 h-2.5 fill-slate-400 text-slate-400" />
+          </div>
+        </div>
+
+        {downloadProgress !== undefined && (
           <motion.div 
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             className="mt-2"
           >
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[8px] font-black text-aladeen-green uppercase tracking-widest animate-pulse">Installing</span>
-              <span className="text-[9px] font-black text-aladeen-green">{Math.floor(downloadProgress)}%</span>
-            </div>
-            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
               <motion.div 
                 className="h-full bg-aladeen-green rounded-full"
                 initial={{ width: 0 }}
@@ -512,21 +515,6 @@ const AppCard: React.FC<{ app: AppData; onClick: () => void; variant?: 'default'
               />
             </div>
           </motion.div>
-        ) : (
-          <div className={`flex items-center justify-between mt-3 ${variant === 'compact' ? 'justify-center gap-2' : ''}`}>
-            <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100/50">
-              <span className="text-[10px] font-black text-slate-700">{app.rating}</span>
-              <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black text-slate-300 uppercase tracking-tighter">{app.size}</span>
-              {app.apkUrl && (
-                <div className="w-6 h-6 bg-aladeen-green/10 rounded-full flex items-center justify-center text-aladeen-green group-hover:bg-aladeen-green group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-aladeen-green/20">
-                  <Download className="w-3.5 h-3.5" />
-                </div>
-              )}
-            </div>
-          </div>
         )}
       </div>
     </motion.div>
@@ -567,32 +555,28 @@ const CategoryIcon = ({ icon, className = "w-6 h-6" }: { icon: string; className
 };
 
 const Section = ({ title, apps, onAppClick, onViewAll, icon: Icon, downloadingApps = {} }: { title: string; apps: AppData[]; onAppClick: (app: AppData) => void; onViewAll?: () => void; icon?: any; downloadingApps?: Record<string, number> }) => (
-  <div className="mb-20">
-    <div className="flex items-center justify-between px-6 mb-8">
-      <div className="flex items-center gap-4">
+  <div className="mb-16">
+    <div className="flex items-center justify-between px-6 mb-6">
+      <div className="flex items-center gap-3">
         {Icon && (
-          <div className="w-12 h-12 bg-aladeen-green/10 rounded-2xl flex items-center justify-center text-aladeen-green shadow-sm border border-aladeen-green/5">
-            <Icon className="w-6 h-6" />
+          <div className="w-10 h-10 bg-aladeen-green/10 rounded-xl flex items-center justify-center text-aladeen-green shadow-sm border border-aladeen-green/5">
+            <Icon className="w-5 h-5" />
           </div>
         )}
-        <div>
-          <h2 className="text-2xl font-display font-black text-slate-900 tracking-tight leading-none">{title}</h2>
-          <div className="h-1 w-8 bg-aladeen-green rounded-full mt-2" />
-        </div>
+        <h2 className="text-xl font-display font-black text-slate-900 tracking-tight">{title}</h2>
       </div>
       {onViewAll && (
         <button 
           onClick={onViewAll}
-          className="group flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-aladeen-green hover:text-white rounded-xl text-xs font-bold text-slate-600 transition-all shadow-sm border border-slate-100"
+          className="w-10 h-10 bg-slate-100 hover:bg-aladeen-green hover:text-white rounded-full flex items-center justify-center text-slate-600 transition-all shadow-sm border border-slate-100 group"
         >
-          View All
-          <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+          <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
         </button>
       )}
     </div>
-    <div className="flex overflow-x-auto no-scrollbar gap-6 px-6 pb-6">
+    <div className="flex overflow-x-auto no-scrollbar gap-5 px-6 pb-4">
       {apps.map(app => (
-        <div key={app.id} className="min-w-[200px] max-w-[200px] sm:min-w-[220px] sm:max-w-[220px]">
+        <div key={app.id} className="min-w-[140px] max-w-[140px] sm:min-w-[160px] sm:max-w-[160px]">
           <AppCard app={app} onClick={() => onAppClick(app)} downloadProgress={downloadingApps[app.id]} />
         </div>
       ))}
@@ -891,7 +875,7 @@ const AppDetail = ({
               onClick={onToggleWishlist}
               className={`w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 border ${
                 isWishlisted 
-                  ? 'bg-rose-50 text-rose-500 border-rose-100 hover:bg-rose-100' 
+                  ? 'bg-aladeen-red/10 text-aladeen-red border-aladeen-red/20 hover:bg-aladeen-red/20' 
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
               }`}
             >
@@ -1026,9 +1010,9 @@ const AppDetail = ({
         </div>
 
         {/* Rating Section */}
-        <div className="mb-10 p-6 bg-slate-50 rounded-3xl border border-slate-100">
-          <h2 className="text-lg font-bold text-slate-900 mb-1">Rate this app</h2>
-          <p className="text-slate-500 text-xs mb-6">Tell others what you think</p>
+        <div className="mb-10 p-6 bg-aladeen-green/5 rounded-3xl border border-aladeen-green/10">
+          <h2 className="text-lg font-bold text-aladeen-dark mb-1">Rate this app</h2>
+          <p className="text-aladeen-green/60 text-xs mb-6">Tell others what you think</p>
           
           {isInstalled ? (
             <div className="flex flex-col gap-6">
@@ -1113,7 +1097,7 @@ const AppDetail = ({
         <div className="mb-10">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-slate-900">Ratings & Reviews</h2>
-            <button className="text-aladeen-red font-bold text-sm">See all</button>
+            <button className="text-aladeen-green font-bold text-sm hover:text-aladeen-red transition-colors">See all</button>
           </div>
 
           <div className="space-y-8">
@@ -1255,162 +1239,75 @@ const CategoryDetail = ({
   onBack, 
   onAppClick,
   apps,
-  downloadingApps = {}
+  downloadingApps = {},
+  onRefresh
 }: { 
   category: CategoryData; 
   onBack: () => void; 
   onAppClick: (app: AppData) => void;
   apps: AppData[];
   downloadingApps?: Record<string, number>;
+  onRefresh: () => Promise<void>;
 }) => {
   const relatedApps = useMemo(() => 
     apps.filter(app => app.category === category.name), 
     [category.name, apps]
   );
 
-  const featuredInCategory = useMemo(() => 
-    relatedApps.filter(app => app.isFeatured).slice(0, 3),
-    [relatedApps]
-  );
-
   return (
-    <motion.div 
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      className="fixed inset-0 bg-slate-50 z-50 overflow-y-auto"
-    >
-      {/* Hero Header */}
-      <div className="relative h-[45vh] md:h-[55vh] w-full overflow-hidden">
-        <img 
-          src={category.banner} 
-          alt={category.name} 
-          className="w-full h-full object-cover"
-          referrerPolicy="no-referrer"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
-        
-        <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-30">
+    <PullToRefresh onRefresh={onRefresh}>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="min-h-screen bg-white"
+      >
+        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4 flex items-center gap-4">
           <button 
-            onClick={onBack} 
-            className="p-3 bg-white/10 backdrop-blur-xl hover:bg-white/20 rounded-2xl text-white transition-all shadow-2xl border border-white/10 group"
+            onClick={onBack}
+            className="w-10 h-10 bg-aladeen-green/10 text-aladeen-green rounded-full flex items-center justify-center hover:bg-aladeen-green hover:text-white transition-all"
           >
-            <ArrowLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
+            <ArrowLeft className="w-5 h-5" />
           </button>
+          <h1 className="text-xl font-display font-black text-slate-900">{category.name}</h1>
         </div>
 
-        <div className="absolute bottom-16 left-0 right-0 px-8 z-20">
-          <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-8">
-            <div className="flex items-center gap-6">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2.5rem] bg-white/10 backdrop-blur-2xl flex items-center justify-center text-white shadow-2xl border border-white/20">
-                <div className="scale-150">
+        <div className="p-6">
+          <div className="w-full h-48 rounded-[2.5rem] bg-aladeen-green flex items-center justify-center text-white mb-10 shadow-xl relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+            <div className="relative z-10 flex flex-col items-center gap-4">
+              <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center">
+                <div className="scale-[2]">
                   <CategoryIcon icon={category.icon} />
                 </div>
               </div>
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="px-3 py-1 bg-aladeen-green text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-aladeen-green/20">Category</span>
-                  <span className="text-white/60 text-xs font-bold uppercase tracking-widest">{relatedApps.length} Apps Available</span>
-                </div>
-                <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-2 leading-none">{category.name}</h1>
-              </div>
+              <h2 className="text-3xl font-display font-black tracking-tight">{category.name}</h2>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="max-w-5xl mx-auto px-6 -mt-12 relative z-30 pb-20">
-        {/* Featured Apps in Category */}
-        {featuredInCategory.length > 0 && (
-          <div className="mb-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-            {featuredInCategory.map(app => (
-              <motion.div 
-                key={app.id}
-                whileHover={{ y: -10 }}
-                onClick={() => onAppClick(app)}
-                className="bg-white rounded-[2.5rem] p-6 shadow-xl border border-slate-100 flex items-center gap-4 cursor-pointer group"
-              >
-                <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg group-hover:scale-110 transition-transform">
-                  <img src={app.icon} alt={app.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2 py-0.5 bg-aladeen-green/10 text-aladeen-green text-[8px] font-black uppercase tracking-widest rounded-full">Featured</span>
-                  </div>
-                  <h3 className="font-bold text-slate-900 truncate">{app.name}</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{app.developer}</p>
-                </div>
-                <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-aladeen-green group-hover:bg-aladeen-green group-hover:text-white transition-all">
-                  <ChevronRight className="w-5 h-5" />
-                </div>
-              </motion.div>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6">
+            {relatedApps.map(app => (
+              <AppCard 
+                key={app.id} 
+                app={app} 
+                onClick={() => onAppClick(app)} 
+                downloadProgress={downloadingApps[app.id]}
+              />
             ))}
           </div>
-        )}
-        <div className="bg-white rounded-[3rem] p-10 shadow-2xl shadow-slate-200/50 border border-slate-100">
-          <div className="flex items-center justify-between mb-12">
-            <div>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Top <span className="text-aladeen-green">{category.name}</span> Apps</h2>
-              <p className="text-slate-400 font-bold text-sm mt-1 uppercase tracking-widest">Handpicked for you</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
-                <LayoutGrid className="w-5 h-5" />
-              </div>
-            </div>
-          </div>
-          
-          {relatedApps.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8">
-              {relatedApps.map(app => (
-                <AppCard 
-                  key={app.id} 
-                  app={app} 
-                  onClick={() => onAppClick(app)} 
-                  downloadProgress={downloadingApps[app.id]} 
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="py-20 text-center">
-              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mx-auto mb-6">
-                <Search className="w-10 h-10" />
+
+          {relatedApps.length === 0 && (
+            <div className="text-center py-20">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
+                <LayoutGrid className="w-10 h-10" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-2">No apps found</h3>
-              <p className="text-slate-400 font-medium">We couldn't find any apps in this category yet.</p>
+              <p className="text-slate-500">We couldn't find any apps in this category yet.</p>
             </div>
           )}
         </div>
-
-        {/* Featured Section in Category */}
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-2 bg-gradient-to-br from-aladeen-green to-aladeen-dark rounded-[3rem] p-10 text-white relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:scale-110 transition-transform duration-700" />
-            <div className="relative z-10">
-              <h3 className="text-2xl font-black mb-4">Why use {category.name} apps?</h3>
-              <p className="text-white/80 font-medium leading-relaxed mb-8 max-w-md">
-                These applications are specifically selected to provide the best user experience and performance in the {category.name.toLowerCase()} space.
-              </p>
-              <div className="flex items-center gap-4">
-                <div className="flex -space-x-3">
-                  {relatedApps.slice(0, 3).map((app, i) => (
-                    <img key={i} src={app.icon} alt="" className="w-10 h-10 rounded-full border-2 border-aladeen-green object-cover" referrerPolicy="no-referrer" />
-                  ))}
-                </div>
-                <span className="text-sm font-bold">Trusted by thousands of users</span>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-xl flex flex-col justify-center items-center text-center">
-            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 mb-6">
-              <ShieldCheck className="w-8 h-8" />
-            </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">Safe & Secure</h3>
-            <p className="text-slate-400 text-sm font-medium">All apps are scanned and verified for your safety.</p>
-          </div>
-        </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </PullToRefresh>
   );
 };
 
@@ -1984,28 +1881,28 @@ const AdminDashboard = ({
         {activeTab === 'analytics' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
             <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
-              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 mb-4">
+              <div className="w-12 h-12 bg-aladeen-green/10 rounded-2xl flex items-center justify-center text-aladeen-green mb-4">
                 <LayoutGrid className="w-6 h-6" />
               </div>
               <div className="text-2xl font-black text-slate-900">{stats.totalApps}</div>
               <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Total Apps</div>
             </div>
             <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
-              <div className="w-12 h-12 bg-aladeen-green/10 rounded-2xl flex items-center justify-center text-aladeen-green mb-4">
+              <div className="w-12 h-12 bg-aladeen-red/10 rounded-2xl flex items-center justify-center text-aladeen-red mb-4">
                 <Download className="w-6 h-6" />
               </div>
               <div className="text-2xl font-black text-slate-900">{stats.totalDownloads}</div>
               <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Total Downloads</div>
             </div>
             <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
-              <div className="w-12 h-12 bg-yellow-50 rounded-2xl flex items-center justify-center text-yellow-500 mb-4">
+              <div className="w-12 h-12 bg-aladeen-green/10 rounded-2xl flex items-center justify-center text-aladeen-green mb-4">
                 <Star className="w-6 h-6" />
               </div>
               <div className="text-2xl font-black text-slate-900">{stats.avgRating}</div>
               <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Avg Rating</div>
             </div>
             <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
-              <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-500 mb-4">
+              <div className="w-12 h-12 bg-aladeen-red/10 rounded-2xl flex items-center justify-center text-aladeen-red mb-4">
                 <FileText className="w-6 h-6" />
               </div>
               <div className="text-2xl font-black text-slate-900">{stats.totalReviews}</div>
@@ -2492,7 +2389,7 @@ const AdminDashboard = ({
                         )}
                         <td className="px-6 py-4">
                           {client.website ? (
-                            <a href={client.website} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-blue-500 hover:underline flex items-center gap-2">
+                            <a href={client.website} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-aladeen-green hover:underline flex items-center gap-2">
                               <Globe className="w-4 h-4" />
                               Website
                             </a>
@@ -2502,7 +2399,7 @@ const AdminDashboard = ({
                         </td>
                         <td className="px-6 py-4">
                           {client.facebook ? (
-                            <a href={client.facebook} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-indigo-500 hover:underline flex items-center gap-2">
+                            <a href={client.facebook} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-aladeen-red hover:underline flex items-center gap-2">
                               <Facebook className="w-4 h-4" />
                               Facebook
                             </a>
@@ -2524,13 +2421,13 @@ const AdminDashboard = ({
                                 setClientFormData(client);
                                 setIsAddingClient(true);
                               }}
-                              className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
+                              className="p-2 hover:bg-aladeen-green/10 text-aladeen-green rounded-lg transition-colors"
                             >
                               <Edit className="w-5 h-5" />
                             </button>
                             <button 
                               onClick={() => setClientToDelete(client)}
-                              className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+                              className="p-2 hover:bg-aladeen-red/10 text-aladeen-red rounded-lg transition-colors"
                             >
                               <Trash2 className="w-5 h-5" />
                             </button>
@@ -2557,9 +2454,9 @@ const AdminDashboard = ({
                 </div>
               </div>
               <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-aladeen-red/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform" />
                 <div className="relative z-10">
-                  <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 mb-6">
+                  <div className="w-12 h-12 bg-aladeen-red/10 rounded-2xl flex items-center justify-center text-aladeen-red mb-6">
                     <Download className="w-6 h-6" />
                   </div>
                   <div className="text-4xl font-black text-slate-900 mb-1">{stats.totalDownloads}</div>
@@ -2567,9 +2464,9 @@ const AdminDashboard = ({
                 </div>
               </div>
               <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-50 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-aladeen-green/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform" />
                 <div className="relative z-10">
-                  <div className="w-12 h-12 bg-yellow-50 rounded-2xl flex items-center justify-center text-yellow-500 mb-6">
+                  <div className="w-12 h-12 bg-aladeen-green/10 rounded-2xl flex items-center justify-center text-aladeen-green mb-6">
                     <Star className="w-6 h-6" />
                   </div>
                   <div className="text-4xl font-black text-slate-900 mb-1">{stats.avgRating}</div>
@@ -2577,9 +2474,9 @@ const AdminDashboard = ({
                 </div>
               </div>
               <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-50 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-aladeen-red/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform" />
                 <div className="relative z-10">
-                  <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-500 mb-6">
+                  <div className="w-12 h-12 bg-aladeen-red/10 rounded-2xl flex items-center justify-center text-aladeen-red mb-6">
                     <Users className="w-6 h-6" />
                   </div>
                   <div className="text-4xl font-black text-slate-900 mb-1">{clients.length}</div>
@@ -3001,6 +2898,19 @@ function AppContent() {
     return () => unsubscribe();
   }, []);
 
+  const handleRefresh = async () => {
+    try {
+      const q = query(collection(db, 'apps'), orderBy('addedAt', 'desc'));
+      const snapshot = await getDocs(q);
+      const apps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppData));
+      setAllApps(apps.length > 0 ? apps : MOCK_APPS);
+      toast.success('Apps updated');
+    } catch (error) {
+      console.error('Error refreshing apps:', error);
+      toast.error('Failed to refresh apps');
+    }
+  };
+
   // Clients listener
   useEffect(() => {
     if (!isAuthReady || currentUser?.role !== 'admin') {
@@ -3419,7 +3329,7 @@ function AppContent() {
       return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-white rounded-[2.5rem] p-10 shadow-2xl border border-slate-100 text-center">
-            <div className="w-20 h-20 bg-aladeen-green/10 rounded-3xl flex items-center justify-center text-aladeen-green mx-auto mb-6">
+            <div className="w-20 h-20 bg-aladeen-red/10 rounded-3xl flex items-center justify-center text-aladeen-red mx-auto mb-6">
               <Lock className="w-10 h-10" />
             </div>
             <h1 className="text-3xl font-display font-black text-slate-900 mb-4 tracking-tighter">Admin Access</h1>
@@ -3429,7 +3339,7 @@ function AppContent() {
                 setIsAdminAuth(true);
                 setIsAuthModalOpen(true);
               }}
-              className="w-full bg-aladeen-green text-white py-4 rounded-2xl font-black shadow-lg shadow-aladeen-green/20 hover:bg-aladeen-dark transition-all"
+              className="w-full bg-aladeen-red text-white py-4 rounded-2xl font-black shadow-lg shadow-aladeen-red/20 hover:bg-aladeen-dark transition-all"
             >
               Admin Login
             </button>
@@ -3473,10 +3383,10 @@ function AppContent() {
             className="text-3xl font-display font-black text-aladeen-green cursor-pointer tracking-tighter flex items-center gap-2"
             onClick={() => { navigate('/'); setSelectedCategory(null); setSearchQuery(''); }}
           >
-            <div className="w-10 h-10 bg-aladeen-green rounded-xl flex items-center justify-center text-white shadow-lg shadow-aladeen-green/20">
+            <div className="w-10 h-10 bg-aladeen-red rounded-xl flex items-center justify-center text-white shadow-lg shadow-aladeen-red/20">
               <LayoutGrid className="w-6 h-6" />
             </div>
-            <span>aladeen<span className="text-slate-900">.app</span></span>
+            <span>aladeen<span className="text-aladeen-red">.app</span></span>
           </div>
           <div className="flex items-center gap-3">
             <button 
@@ -3539,80 +3449,83 @@ function AppContent() {
             />
           } />
           <Route path="/apps" element={
-            <div className="px-6 py-8">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div>
-                  <h2 className="text-2xl font-black text-slate-900">
-                    {selectedCategory || (searchQuery ? `Search: ${searchQuery}` : 'All Apps')}
-                  </h2>
-                  <p className="text-sm text-slate-500">{filteredApps.length} apps found</p>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-                    <Filter className="w-4 h-4 text-slate-400" />
-                    <select 
-                      className="bg-transparent text-sm font-semibold text-slate-700 outline-none"
-                      value={selectedCategory || ''}
-                      onChange={(e) => setSelectedCategory(e.target.value || null)}
-                    >
-                      <option value="">All Categories</option>
-                      {CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
-                    </select>
+            <PullToRefresh onRefresh={handleRefresh}>
+              <div className="px-6 py-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                  <div>
+                    <h2 className="text-2xl font-black text-slate-900">
+                      {selectedCategory || (searchQuery ? `Search: ${searchQuery}` : 'All Apps')}
+                    </h2>
+                    <p className="text-sm text-slate-500">{filteredApps.length} apps found</p>
                   </div>
                   
-                  <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-                    <ArrowUpDown className="w-4 h-4 text-slate-400" />
-                    <select 
-                      className="bg-transparent text-sm font-semibold text-slate-700 outline-none"
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as any)}
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                      <Filter className="w-4 h-4 text-slate-400" />
+                      <select 
+                        className="bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                        value={selectedCategory || ''}
+                        onChange={(e) => setSelectedCategory(e.target.value || null)}
+                      >
+                        <option value="">All Categories</option>
+                        {CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                      </select>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                      <ArrowUpDown className="w-4 h-4 text-slate-400" />
+                      <select 
+                        className="bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as any)}
+                      >
+                        <option value="popular">Popular</option>
+                        <option value="latest">Latest</option>
+                        <option value="rating">Rating</option>
+                        <option value="downloads">Downloads</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+                  {filteredApps.map(app => (
+                    <AppCard 
+                      key={app.id} 
+                      app={app} 
+                      onClick={() => navigate(`/${slugify(app.name)}`)} 
+                      highlight={searchQuery} 
+                      downloadProgress={downloadingApps[app.id]}
+                    />
+                  ))}
+                </div>
+
+                {filteredApps.length === 0 && (
+                  <div className="text-center py-20">
+                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Search className="w-10 h-10 text-slate-200" />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900">No apps found</h3>
+                    <p className="text-slate-500 text-sm">Try adjusting your search or filters</p>
+                    <button 
+                      onClick={() => { setSelectedCategory(null); setSearchQuery(''); }}
+                      className="mt-6 text-aladeen-green font-bold hover:underline"
                     >
-                      <option value="popular">Popular</option>
-                      <option value="latest">Latest</option>
-                      <option value="rating">Rating</option>
-                      <option value="downloads">Downloads</option>
-                    </select>
+                      Clear all filters
+                    </button>
                   </div>
-                </div>
+                )}
               </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-                {filteredApps.map(app => (
-                  <AppCard 
-                    key={app.id} 
-                    app={app} 
-                    onClick={() => navigate(`/${slugify(app.name)}`)} 
-                    highlight={searchQuery} 
-                    downloadProgress={downloadingApps[app.id]}
-                  />
-                ))}
-              </div>
-
-              {filteredApps.length === 0 && (
-                <div className="text-center py-20">
-                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Search className="w-10 h-10 text-slate-200" />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900">No apps found</h3>
-                  <p className="text-slate-500 text-sm">Try adjusting your search or filters</p>
-                  <button 
-                    onClick={() => { setSelectedCategory(null); setSearchQuery(''); }}
-                    className="mt-6 text-aladeen-green font-bold hover:underline"
-                  >
-                    Clear all filters
-                  </button>
-                </div>
-              )}
-            </div>
+            </PullToRefresh>
           } />
           <Route path="/" element={
-            <>
+            <PullToRefresh onRefresh={handleRefresh}>
+              <>
               {/* Hero Section */}
               <section className="relative px-6 pt-24 pb-32 overflow-hidden">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10">
-                  <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-aladeen-green/5 rounded-full blur-[120px] animate-pulse" />
-                  <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-aladeen-accent/5 rounded-full blur-[120px] animate-pulse" />
+                  <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-aladeen-green/10 rounded-full blur-[120px] animate-pulse" />
+                  <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-aladeen-red/10 rounded-full blur-[120px] animate-pulse" />
                 </div>
 
                 {/* Floating Decorative Elements */}
@@ -3768,7 +3681,7 @@ function AppContent() {
               </section>
 
               <CategorySection 
-                title="ফিচার্ড ক্যাটাগরি" 
+                title="Featured Categories" 
                 categories={featuredCategories} 
                 onCategoryClick={(cat) => navigate(`/category/${slugify(cat.name)}`)}
                 icon={LayoutGrid}
@@ -3808,10 +3721,12 @@ function AppContent() {
                 downloadingApps={downloadingApps}
               />
             </>
+          </PullToRefresh>
           } />
           <Route path="/category/:categoryName" element={<CategoryDetailRouteWrapper 
             allApps={allApps}
             downloadingApps={downloadingApps}
+            onRefresh={handleRefresh}
           />} />
           <Route path="/:appId" element={<AppDetailRouteWrapper 
             allApps={allApps}
